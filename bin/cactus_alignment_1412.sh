@@ -26,7 +26,7 @@ git checkout "$CACTUS_TAG" && git submodule update --init && make >/dev/null
 mkdir -p "${MSCA_DATA_DIR}/comparative/1412/cactus"
 cd "${MSCA_DATA_DIR}/comparative/1412/cactus"
 cp "${PIPELINE_DIR}/etc/cactus_progressive_config_1412.xml" .
-sed -i "s/MSCA_DATA_DIR/${MSCA_DATA_DIR}/g" "${PIPELINE_DIR}/etc/1412_seqFile.txt" > 1412_seqFile.txt
+sed "s^MSCA_DATA_DIR^${MSCA_DATA_DIR}^g" "${PIPELINE_DIR}/etc/1412_seqFile.txt" > 1412_seqFile.txt
 
 # Run the alignment
 "${PIPELINE_DIR}/extern/progressiveCactus_1412/bin/runProgressiveCactus.sh" --config cactus_progressive_config_1412.xml $PROGRESSIVE_CACTUS_BATCH_ARGS --root msca_root 1412_seqFile.txt work_1412 1412.hal
