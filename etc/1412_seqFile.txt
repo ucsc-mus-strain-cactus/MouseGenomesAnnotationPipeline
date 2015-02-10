@@ -1,4 +1,4 @@
-(((((SPRETEiJ:0.0020, (PWKPhJ:0.0010, (CASTEiJ:0.0010, (WSBEiJ:1.0E-5, (((NZOHlLtJ:1.0E-6, (C57B6NJ:1.0E-6, C57B6J:1.0E-6):1.0E-6):1.0E-6, ((NODShiLtJ:1.0E-6, FVBNJ:1.0E-6):1.0E-6, (((DBA2J:1.0E-6, (CBAJ:1.0E-6, C3HHeJ:1.0E-6):1.0E-6):1.0E-6, AKRJ:1.0E-6):1.0E-6, (BALBcJ:1.0E-6, AJ:1.0E-6):1.0E-6):1.0E-6):1.0E-6):1.0E-6, (LPJ:1.0E-6, 129S1:1.0E-6):1.0E-6):1.0E-6):1.0E-4):1.0E-6):1.0E-6):0.013, Rattus:0.013)msca_root:0.065,micOch1:0.15):0.117, jacJac1:0.1859):0.15,hg19:0.14);
+(((((((SPRETEiJ:0.0020, (PWKPhJ:0.0010, (CASTEiJ:0.0010, (WSBEiJ:1.0E-5, (((NZOHlLtJ:1.0E-6, (C57B6NJ:1.0E-6, C57B6J:1.0E-6):1.0E-6):1.0E-6, ((NODShiLtJ:1.0E-6, FVBNJ:1.0E-6):1.0E-6, (((DBA2J:1.0E-6, (CBAJ:1.0E-6, C3HHeJ:1.0E-6):1.0E-6):1.0E-6, AKRJ:1.0E-6):1.0E-6, (BALBcJ:1.0E-6, AJ:1.0E-6):1.0E-6):1.0E-6):1.0E-6):1.0E-6, (LPJ:1.0E-6, 129S1:1.0E-6):1.0E-6):1.0E-6):1.0E-4):1.0E-6):1.0E-6):0.015, CAROLIEiJ:0.02):0.01, PAHARIEiJ:0.03):0.02, Rattus:0.013)msca_root:0.065,micOch1:0.15):0.117, jacJac1:0.1859):0.15,hg19:0.14);
 
 129S1 MSCA_DATA_DIR/assemblies/1412/genome/129S1_SvImJ.fa.masked
 AJ MSCA_DATA_DIR/assemblies/1412/genome/A_J.fa.masked
@@ -18,6 +18,8 @@ WSBEiJ MSCA_DATA_DIR/assemblies/1412/genome/WSB_EiJ.fa.masked
 FVBNJ MSCA_DATA_DIR/assemblies/1412/genome/FVB_NJ.fa.masked
 *C57B6J MSCA_DATA_DIR/assemblies/1412/genome/Mus_musculus.GRCm38.dna_sm.primary_assembly.fa.masked
 *Rattus MSCA_DATA_DIR/assemblies/1412/genome/Rattus_norvegicus.Rnor_5.0.dna_sm.toplevel.fa.masked
+CAROLIEiJ MSCA_DATA_DIR/assemblies/1412/genome/CAROLI_EiJ.fa.masked
+PAHARIEiJ MSCA_DATA_DIR/assemblies/1412/genome/Pahari_EiJ.fa.masked
 micOch1 MSCA_DATA_DIR/assemblies/1412/genome/micOch1.fa
 jacJac1 MSCA_DATA_DIR/assemblies/1412/genome/jacJac1.fa
 hg19 MSCA_DATA_DIR/assemblies/1412/genome/hg19.fa
