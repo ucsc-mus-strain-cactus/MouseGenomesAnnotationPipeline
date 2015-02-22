@@ -1,9 +1,12 @@
 documentation on mus-strain 1412 build and analysis
-add to the end of file with entries in the form:
 ----------------------------------------------------------------------
-2015-02-17  MarkD
-   description and commands on what you did
-----------------------------------------------------------------------
+2015-02-22 markd : run transmap
+   - build transmap alignments of 2015-02-22.  This is still using
+     simpleChain on the mappings
+
+     nice make -j 16 -f rules/transMap.mk >&log&
+
+
 
 ----------------------------------------------------------------------
 
