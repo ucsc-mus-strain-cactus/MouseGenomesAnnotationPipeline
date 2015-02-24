@@ -9,7 +9,19 @@ documentation on mus-strain 1412 build and analysis
 
 
 ----------------------------------------------------------------------
+2015-02-23 jcarmstr : run coalescence statistics
+   - Need to put this in a script and include treeBuildingEvaluation
+     as a submodule, but don't have time right now.
+   - In pipeline data dir, ran:
 
+   mkdir -p analysis/coalescences/1412
+   PYTHONPATH=$PYTHONPATH:/hive/users/jcarmstr/cactusStuff/treeBuildingEvaluation/src PATH=$PATH:/hive/users/jcarmstr/cactusStuff/treeBuildingEvaluation/bin /hive/users/jcarmstr/cactusStuff/treeBuildingEvaluation/src/scoreHalPhylogenies.py comparative/1412/cactus/1412.hal C57B6J analysis/coalescences/1412/C57B6J_1412.xml --writeMismatchesToFile analysis/coalescences/1412/C57B6J_mismatches --batchSystem parasol --parasolCommand '/cluster/home/jcarmstr/bin/parasol -host=ku' --jobTree /hive/users/jcarmstr/tmp/jobTree4 --retryCount 3
+
+    - Some of the parasol jobs fail due to I/O errors (presumably?)
+      but run fine on kolossus/juggernaut. Redid these with:
+
+    sed -i 's/batch_system="parasol"/batch_system="singleMachine"/g' /hive/users/jcarmstr/tmp/jobTree4/config.xml
+    PYTHONPATH=$PYTHONPATH:/hive/users/jcarmstr/cactusStuff/treeBuildingEvaluation/src PATH=$PATH:/hive/users/jcarmstr/cactusStuff/treeBuildingEvaluation/bin jobTreeRun --maxThreads 30 --batchSystem singleMachine --jobTree /hive/users/jcarmstr/tmp/jobTree4/
 
 ----------------------------------------------------------------------
 
