@@ -2,7 +2,8 @@
 # Copyright 2006-2012 Mark Diekhans
 
 import sys, os
-sys.path.append(os.path.expanduser("~markd/compbio/code/pycbio/lib"))
+# FIXME: should use virtualenv
+sys.path.append(os.path.expanduser("/hive/groups/recon/projs/mus_strain_cactus/src/pycbio/lib"))
 from optparse import OptionParser
 from pycbio.hgdata import geneCheckDetails
 from pycbio.sys import fileOps, pipeline

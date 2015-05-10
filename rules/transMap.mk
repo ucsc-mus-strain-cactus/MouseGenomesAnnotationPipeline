@@ -1,9 +1,10 @@
 ###
 # configuration  FIXME: move to common file
 ###
+MSCA_VERSION = 1411
+#MSCA_VERSION = 1412
 MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
 MSCA_DATA_DIR = ${MSCA_PROJ_DIR}/pipeline_data
-MSCA_VERSION = 1412
 HAL_BIN = ${MSCA_PROJ_DIR}/src/progressiveCactus/submodules/hal/bin
 PYCBIO_DIR = ${MSCA_PROJ_DIR}/src/pycbio
 GENCODE_VERSION = VM2
@@ -21,8 +22,14 @@ ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}/genome
 srcGencodeSet = wgEncodeGencodeBasic${GENCODE_VERSION}
 srcHgDb= mm10
 srcOrg = C57B6J
+# FIXME: includeing srcOrg below is a hack
+ifeq (${MSCA_VERSION},1411)
+mappedOrgs = 129S1 AJ AKRJ BALBcJ C3HHeJ C57B6J C57B6NJ CASTEiJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PWKPhJ SPRETEiJ WSBEiJ  Rattus
+else ifeq (${MSCA_VERSION},1412)
 mappedOrgs = 129S1 AJ AKRJ BALBcJ C3HHeJ C57B6J C57B6NJ CAROLIEiJ CASTEiJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PAHARIEiJ PWKPhJ Rattus SPRETEiJ WSBEiJ
-
+else
+$(error MSCA_VERSION=${MSCA_VERSION} not handled in makefile.
+endif
 
 # FIXME due to different naming conventions, there are rules at the bottom to create 2bit from
 # FASTA files
@@ -69,6 +76,7 @@ srcDataDir = ${TRANS_MAP_DIR}/data
 genomeDir = ${srcDataDir}/genomes
 srcBasicPre = ${srcDataDir}/${srcGencodeSet}
 srcBasicGp =  ${srcBasicPre}.gp
+srcBasicFa =  ${srcBasicPre}.fa
 srcBasicBed = ${srcBasicPre}.bed
 srcBasicPsl = ${srcBasicPre}.psl
 srcBasicSizes = ${srcBasicPre}.sizes
@@ -77,11 +85,13 @@ srcBasicCheck = ${srcBasicPre}.gene-check
 srcBasicCheckDetails = ${srcBasicPre}.gene-check-details
 srcBasicStats = ${srcBasicPre}.gene-check.stats
 srcBasicCheckBed = ${srcBasicPre}.gene-check.bed
+srcBasicCheckDetailsBed = ${srcBasicPre}.gene-check-details.bed
 
 # mappings
-mappedDataDir = mapped
+mappedDataDir = ${TRANS_MAP_DIR}/mapped
 mappedRegionIdPsls = ${mappedOrgs:%=${mappedDataDir}/%.region.idpsl}
 mappedBlockPsls = ${mappedOrgs:%=${mappedDataDir}/%.block.psl}
+
 
 # chained
 chainedDataDir = ${TRANS_MAP_DIR}/results/chained
@@ -94,26 +104,33 @@ filteredPsls = ${mappedOrgs:%=${filteredDataDir}/%.filtered.psl}
 filteredQstats = ${mappedOrgs:%=${filteredDataDir}/%.filtered.qstats}
 
 # mapped genes
+# FIXME: these names are confusing.
 geneCheckDataDir = ${TRANS_MAP_DIR}/results/geneCheck
 geneCheckGps = ${mappedOrgs:%=${geneCheckDataDir}/%.gp}
 geneCheckEvals = ${mappedOrgs:%=${geneCheckDataDir}/%.gene-check}
 geneCheckEvalsDetails = ${mappedOrgs:%=${geneCheckDataDir}/%.gene-check-details}
 geneCheckEvalStats = ${mappedOrgs:%=${geneCheckDataDir}/%.gene-check.stats}
 geneCheckEvalsBed = ${mappedOrgs:%=${geneCheckDataDir}/%.gene-check.bed}
+geneCheckEvalsDetailsBed = ${mappedOrgs:%=${geneCheckDataDir}/%.gene-check-details.bed}
 
 all: srcData mapping chaining filtered geneValidate
 
 ###
 # src genes
 ###
-srcData: ${srcBasicGp} ${srcBasicPsl} ${srcBasicCds} ${srcBasicSizes} ${srcBasicCheck} ${srcBasicStats} ${srcBasicCheckBed}
+srcData: ${srcBasicGp} ${srcBasicFa} ${srcBasicPsl} ${srcBasicCds} ${srcBasicSizes} ${srcBasicCheck} ${srcBasicStats} ${srcBasicCheckBed} ${srcBasicCheckDetailsBed}
 
 # awk expression to edit chrom names in UCSC format.  Assumse all alts are version 1.
 # chr1_GL456211_random, chrUn_GL456239
 editUcscChrom = $$chromCol=="chrM"{$$chromCol="MT"} {$$chromCol = gensub("_random$$","", "g", $$chromCol);$$chromCol = gensub("^chr.*_([0-9A-Za-z]+)$$","\\1.1", "g", $$chromCol);  gsub("^chr","",$$chromCol); print $$0}
 ${srcBasicGp}:
 	@mkdir -p $(dir $@)
-	hgsql -Ne 'select * from ${srcGencodeSet}' mm10 | cut -f 2- | tawk -v chromCol=2 '${editUcscChrom}' >$@.${tmpExt}
+	hgsql -Ne 'select * from ${srcGencodeSet}' ${srcHgDb} | cut -f 2- | tawk -v chromCol=2 '${editUcscChrom}' >$@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${srcBasicFa}:
+	@mkdir -p $(dir $@)
+	getRnaPred ${srcHgDb} ${srcGencodeSet} all $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 %.bed: %.gp
@@ -124,7 +141,7 @@ ${srcBasicGp}:
 ${srcBasicCds}: ${srcBasicPsl}
 ${srcBasicPsl}: ${srcBasicGp}
 	@mkdir -p $(dir $@)
-	genePredToFakePsl mm10 ${srcGencodeSet} stdout ${srcBasicCds} | tawk -v chromCol=14 '${editUcscChrom}' >$@.${tmpExt}
+	genePredToFakePsl ${srcHgDb} ${srcGencodeSet} stdout ${srcBasicCds} | tawk -v chromCol=14 '${editUcscChrom}' >$@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${srcBasicSizes}: ${srcBasicPsl}
@@ -146,8 +163,10 @@ ${mappedDataDir}/%.region.idpsl: ${srcBasicBed}
 	${halLiftover} --tab --outPSLWithName ${halFile} ${srcOrg} ${srcBasicBed} $*  $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
+# map and update match stats, which likes target sort for speed
 ${mappedDataDir}/%.block.psl: ${mappedDataDir}/%.region.idpsl
-	pslMap -mapFileWithInQName ${srcBasicPsl} $< $@.${tmpExt}
+	@mkdir -p $(dir $@)
+	pslMap -mapFileWithInQName ${srcBasicPsl} $<  /dev/stdout | sort -k 14,14 -k 16,16n | pslRecalcMatch /dev/stdin ${genomeDir}/$*.2bit ${srcBasicFa} $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ####
@@ -195,11 +214,16 @@ ${filteredDataDir}/%.filtered.psl: ${chainedDataDir}/%.chained.psl
 	genePredCheckToBed $*.gp $*.gene-check $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
+%.gene-check-details.bed: %.gene-check-details
+	@mkdir -p $(dir $@)
+	genePredCheckDetailsToBed $< $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
 
 ##
 # gene validations
 #
-geneValidate: ${geneCheckGps} ${geneCheckEvals} ${geneCheckEvalStats} ${geneCheckEvalsBed}
+geneValidate: ${geneCheckGps} ${geneCheckEvals} ${geneCheckEvalStats} ${geneCheckEvalsBed} ${geneCheckEvalsDetailsBed}
 
 ${geneCheckDataDir}/%.gp: ${filteredDataDir}/%.filtered.psl  ${srcBasicCds}
 	@mkdir -p $(dir $@)
