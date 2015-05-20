@@ -19,7 +19,7 @@ endif
 
 all: annotation
 
-annotation: ${GencodeSubsets:%=%.annotation}
+annotation: ${gencodeSubsets:%=%.annotation}
 
 %.annotation:
 	@echo ${srcGencodeAllGp}
