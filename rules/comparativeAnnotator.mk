@@ -9,52 +9,17 @@ maxJobDuration = 36000
 
 ifneq (${gencodeSubset},)
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
-transMapChainedAllPsls = ${srcOrgs:%=${TRANS_MAP_DIR}/transMap/%/${gencodeSubset}.psl}
-transMapEvalAllGp = ${srcOrgs:%=${TRANS_MAP_DIR}/transMap/%/${gencodeSubset}.gp}
-srcGp = ${SRC_GENCODE_DATA_DIR}/${gencodeSubset}.gp
-jobTreeDir = .${gencodeSubset}_comparativeAnnotatorJobTree
-log = ${gencodeSubset}_jobTree.log
+transMapChainedAllPsls = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.psl}
+transMapEvalAllGp = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.gp}
+srcGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
+jobTreeDir = $(shell pwd)/.${gencodeSubset}_comparativeAnnotatorJobTree
+log = $(shell pwd)/${gencodeSubset}_jobTree.log
 endif
 
 
-all: extractFasta annotation
+all: annotation
 
-extractFasta: ${targetFastaFiles} ${targetTwoBitFiles} ${targetChromSizes} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
-
-${GENOMES_DIR}/%.fa:
-	@mkdir -p $(dir $@)
-	n="$(shell basename $@ | cut -d "." -f 1)" ;\
-	hal2fasta ${HAL} $$n > $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${GENOMES_DIR}/%.2bit: ${GENOMES_DIR}/%.fa
-	@mkdir -p $(dir $@)
-	faToTwoBit $< $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${GENOMES_DIR}/%.chrom.sizes:
-	@mkdir -p $(dir $@)
-	n="$(shell basename $@ | cut -d "." -f 1)" ;\
-	halStats --chromSizes $$n ${HAL} > $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${queryFasta}:
-	@mkdir -p $(dir $@)
-	n="$(shell basename $@ | cut -d "." -f 1)" ;\
-	hal2fasta ${HAL} $$n > $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${queryTwoBit}: ${queryFasta}
-	@mkdir -p $(dir $@)
-	faToTwoBit ${queryFasta} $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${queryChromSizes}: ${queryTwoBit}
-	@mkdir -p $(dir $@)
-	twoBitInfo ${queryTwoBit} stdout | sort -k2rn > $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-annotation: ${srcGencodeSubsets:%=%.annotation}
+annotation: ${GencodeSubsets:%=%.annotation}
 
 %.annotation:
 	@echo ${srcGencodeAllGp}
@@ -80,7 +45,7 @@ ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapE
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refTwoBit ${queryTwoBit} \
 		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
-		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log}" ;\
+		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log} ;\
 	fi
 	touch $@
 

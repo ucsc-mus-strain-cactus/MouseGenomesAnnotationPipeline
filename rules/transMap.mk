@@ -7,6 +7,11 @@ include config.mk
 ifneq (${mapTargetOrg},)
 TRANSMAP_DATA_DIR = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 
+# sequence files needed
+targetFasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fasta
+targetTwoBit = ${ASM_GENOMES_DIR}/${mapTargetOrg}.2bit
+targetChromSizes = ${ASM_GENOMES_DIR}/${mapTargetOrg}.chrom.sizes
+
 # block transMap
 transMapMappedRegionIdAllPsl = ${transMapGencodeSubsets:%=${TRANSMAP_DATA_DIR}/%.region.idpsl}
 transMapMappedBlockAllPsl = ${transMapGencodeSubsets:%=${TRANSMAP_DATA_DIR}/%.block.psl}
@@ -24,7 +29,7 @@ all: srcData transMap
 ###
 # src genes
 ###
-srcData: ${srcAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllFa} ${srcGencodeAllPsl} ${srcGencodeAllCds}
+srcData: ${srcAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAllFa} ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
 
 # awk expression to edit chrom names in UCSC format.  Assumse all alts are version 1.
 # chr1_GL456211_random, chrUn_GL456239
@@ -33,17 +38,22 @@ editUcscChrom = $$chromCol=="chrM"{$$chromCol="MT"} {$$chromCol = gensub("_rando
 
 ${srcAttrsTsv}:
 	@mkdir -p $(dir $@)
-	hgsql -e 'select geneId,geneName,geneType,transcriptId,transcriptType from ${srcGencodeAttrs}' ${srcOrgHgDb} >$@.${tmpExt}
+	hgsql -e 'select geneId,geneName,geneType,transcriptId,transcriptType from ${srcGencodeAttrs}' ${srcOrgHgDb} > $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${SRC_GENCODE_DATA_DIR}/%.gp:
 	@mkdir -p $(dir $@)
-	hgsql -Ne 'select * from $*' ${srcOrgHgDb} | cut -f 2- | tawk -v chromCol=2 '${editUcscChrom}' >$@.${tmpExt}
+	hgsql -Ne 'select * from $*' ${srcOrgHgDb} | cut -f 2- | tawk -v chromCol=2 '${editUcscChrom}' > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${srcGencodeDataDir}/%.bed: ${srcGencodeDataDir}/%.gp
+	@mkdir -p $(dir $@)
+	genePredToBed $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${SRC_GENCODE_DATA_DIR}/%.fa:
 	@mkdir -p $(dir $@)
-	getRnaPred ${srcHgDb} $* all $@.${tmpExt}
+	getRnaPred ${srcOrgHgDb} $* all $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${SRC_GENCODE_DATA_DIR}/%.cds: ${SRC_GENCODE_DATA_DIR}/%.psl
@@ -52,6 +62,22 @@ ${SRC_GENCODE_DATA_DIR}/%.cds: ${SRC_GENCODE_DATA_DIR}/%.psl
 ${SRC_GENCODE_DATA_DIR}/%.psl:
 	@mkdir -p $(dir $@)
 	genePredToFakePsl ${srcOrgHgDb} $* stdout ${SRC_GENCODE_DATA_DIR}/$*.cds | tawk -v chromCol=14 '${editUcscChrom}' >$@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${queryFasta}:
+	@mkdir -p $(dir $@)
+	n="$(shell basename $@ | cut -d "." -f 1)" ;\
+	${HAL_BIN_DIR}/hal2fasta ${halFile} $$n > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${queryTwoBit}: ${queryFasta}
+	@mkdir -p $(dir $@)
+	faToTwoBit ${queryFasta} $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${queryChromSizes}: ${queryTwoBit}
+	@mkdir -p $(dir $@)
+	twoBitInfo ${queryTwoBit} stdout | sort -k2rn > $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 
@@ -64,15 +90,34 @@ transMap: ${mappedOrgs:%=%.transMap}
 	${MAKE} -f rules/transMap.mk transMapOrg mapTargetOrg=$*
 
 ifneq (${mapTargetOrg},)
-transMapOrg: ${transMapMappedRegionIdAllPsl} ${transMapMappedBlockAllPsl} ${transMapChainedAllPsls} ${transMapEvalAllGp}
+transMapOrg: ${targetFasta} ${targetTwoBit} ${targetChromSizes} ${transMapMappedRegionIdAllPsl} ${transMapMappedBlockAllPsl} ${transMapChainedAllPsls} ${transMapEvalAllGp}
 
+###
+# extracting sequences for this mappedOrg from HAL
+###
+${targetFasta}:
+	@mkdir -p $(dir $@)
+	n="$(shell basename $@ | cut -d "." -f 1)" ;\
+	${HAL_BIN_DIR}/hal2fasta ${halFile} $$n > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${targetTwoBit}: ${targetFasta}
+	@mkdir -p $(dir $@)
+	faToTwoBit $< $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${targetChromSizes}: ${targetTwoBit}
+	@mkdir -p $(dir $@)
+	n="$(shell basename $@ | cut -d "." -f 1)" ;\
+	${HAL_BIN_DIR}/halStats --chromSizes $$n ${halFile} > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
 
 ###
 # mapping
 ###
 ${TRANSMAP_DATA_DIR}/transMap%.region.idpsl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.bed
 	@mkdir -p $(dir $@)
-	${HAL_BIN}/halLiftover --tab --outPSLWithName ${halFile} ${srcOrg} $< ${mapTargetOrg}  $@.${tmpExt}
+	${HAL_BIN_DIR}/halLiftover --tab --outPSLWithName ${halFile} ${srcOrg} $< ${mapTargetOrg}  $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${TRANSMAP_DATA_DIR}/transMap%.block.mapinfo: ${TRANSMAP_DATA_DIR}/transMap%.block.psl
@@ -82,9 +127,8 @@ ${TRANSMAP_DATA_DIR}/transMap%.block.psl: ${TRANSMAP_DATA_DIR}/transMap%.region.
 	@mkdir -p $(dir $@)
 	pslMap -mapFileWithInQName -mapInfo=${TRANSMAP_DATA_DIR}/transMap$*.block.mapinfo ${SRC_GENCODE_DATA_DIR}/wgEncode$*.psl $< /dev/stdout \
 	    | sort -k 14,14 -k 16,16n \
-	    | pslRecalcMatch /dev/stdin ${MSCA_ASSMEBLIES_DIR}/${mapTargetOrg}.2bit ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa $@.${tmpExt}
+	    | pslRecalcMatch /dev/stdin ${targetTwoBit} ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
-
 
 ###
 # chaining
@@ -93,7 +137,6 @@ ${TRANSMAP_DATA_DIR}/%.psl: ${TRANSMAP_DATA_DIR}/%.block.psl
 	@mkdir -p $(dir $@)
 	simpleChain -outPsl $< stdout | bin/pslQueryUniq >$@.${tmpExt}
 	mv -f $@.${tmpExt} $@
-
 
 ###
 # final transMap genes
