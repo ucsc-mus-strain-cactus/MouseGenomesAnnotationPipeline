@@ -8,7 +8,7 @@ ifneq (${mapTargetOrg},)
 TRANSMAP_DATA_DIR = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 
 # sequence files needed
-targetFasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fasta
+targetFasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fa
 targetTwoBit = ${ASM_GENOMES_DIR}/${mapTargetOrg}.2bit
 targetChromSizes = ${ASM_GENOMES_DIR}/${mapTargetOrg}.chrom.sizes
 
