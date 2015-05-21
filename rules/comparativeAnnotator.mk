@@ -1,4 +1,4 @@
-include config.mk
+include defs.mk
 
 # jobTree configuration
 batchSystem = parasol
