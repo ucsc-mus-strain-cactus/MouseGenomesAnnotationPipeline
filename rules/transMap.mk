@@ -89,6 +89,7 @@ transMap: ${mappedOrgs:%=%.transMap}
 %.transMap:
 	${MAKE} -f rules/transMap.mk transMapOrg mapTargetOrg=$*
 
+
 ifneq (${mapTargetOrg},)
 transMapOrg: ${targetFasta} ${targetTwoBit} ${targetChromSizes} ${transMapMappedRegionIdAllPsl} ${transMapMappedBlockAllPsl} ${transMapChainedAllPsls} ${transMapEvalAllGp}
 
@@ -117,7 +118,7 @@ ${targetChromSizes}: ${targetTwoBit}
 ###
 ${TRANSMAP_DATA_DIR}/transMap%.region.idpsl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.bed
 	@mkdir -p $(dir $@)
-	${HAL_BIN_DIR}/halLiftover --tab --outPSLWithName ${halFile} ${srcOrg} $< ${mapTargetOrg}  $@.${tmpExt}
+	${HAL_BIN_DIR}/halLiftover --tab --outPSLWithName ${halFile} ${srcOrg} $< ${mapTargetOrg} $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${TRANSMAP_DATA_DIR}/transMap%.block.mapinfo: ${TRANSMAP_DATA_DIR}/transMap%.block.psl
