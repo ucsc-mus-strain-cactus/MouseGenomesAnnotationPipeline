@@ -127,8 +127,8 @@ ${TRANSMAP_DATA_DIR}/transMap%.block.mapinfo: ${TRANSMAP_DATA_DIR}/transMap%.blo
 ${TRANSMAP_DATA_DIR}/transMap%.block.psl: ${TRANSMAP_DATA_DIR}/transMap%.region.idpsl ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl  ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa
 	@mkdir -p $(dir $@)
 	pslMap -mapFileWithInQName -mapInfo=${TRANSMAP_DATA_DIR}/transMap$*.block.mapinfo ${SRC_GENCODE_DATA_DIR}/wgEncode$*.psl $< /dev/stdout \
-	    | sort -k 14,14 -k 16,16n \
-	    | pslRecalcMatch /dev/stdin ${targetTwoBit} ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa $@.${tmpExt}
+		| sort -k 14,14 -k 16,16n \
+		| pslRecalcMatch /dev/stdin ${targetTwoBit} ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ###
