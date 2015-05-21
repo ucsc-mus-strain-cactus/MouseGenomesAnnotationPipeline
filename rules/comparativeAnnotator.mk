@@ -22,7 +22,6 @@ all: annotation
 annotation: ${gencodeSubsets:%=%.annotation}
 
 %.annotation:
-	@echo ${srcGencodeAllGp}
 	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
 
 ifneq (${gencodeSubset},)
