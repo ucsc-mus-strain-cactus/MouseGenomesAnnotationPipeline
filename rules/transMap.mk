@@ -86,7 +86,7 @@ ${queryChromSizes}: ${queryTwoBit}
 ###
 transMap: ${mappedOrgs:%=%.transMap}
 
-%.transMap:
+%.transMap: srcData
 	${MAKE} -f rules/transMap.mk transMapOrg mapTargetOrg=$*
 
 
@@ -124,7 +124,7 @@ ${TRANSMAP_DATA_DIR}/transMap%.region.idpsl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.b
 ${TRANSMAP_DATA_DIR}/transMap%.block.mapinfo: ${TRANSMAP_DATA_DIR}/transMap%.block.psl
 
 # map and update match stats, which likes target sort for speed
-${TRANSMAP_DATA_DIR}/transMap%.block.psl: ${TRANSMAP_DATA_DIR}/transMap%.region.idpsl ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl  ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa
+${TRANSMAP_DATA_DIR}/transMap%.block.psl: ${TRANSMAP_DATA_DIR}/transMap%.region.idpsl ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl  ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa  ${targetTwoBit}
 	@mkdir -p $(dir $@)
 	pslMap -mapFileWithInQName -mapInfo=${TRANSMAP_DATA_DIR}/transMap$*.block.mapinfo ${SRC_GENCODE_DATA_DIR}/wgEncode$*.psl $< /dev/stdout \
 		| sort -k 14,14 -k 16,16n \
