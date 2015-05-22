@@ -2,7 +2,7 @@ include config.mk
 
 # base directory definitions
 MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
-MSCA_DATA_DIR = ${MSCA_PROJ_DIR}/pipeline_data
+MSCA_DATA_DIR = ${MSCA_PROJ_DIR}/pipeline_data_markd_debug
 MSCA_ASSMEBLIES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 HAL_BIN_DIR = ${MSCA_PROJ_DIR}/src/progressiveCactus/submodules/hal/bin
 PYCBIO_DIR = ${MSCA_PROJ_DIR}/src/pycbio
