@@ -1,134 +1,27 @@
-###
-# configuration  FIXME: move to common file
-###
-MSCA_VERSION = 1411
-#MSCA_VERSION = 1412
-GENCODE_VERSION = VM4
-TRANS_MAP_VERSION = 2015-05-15
-
-MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
-MSCA_DATA_DIR = ${MSCA_PROJ_DIR}/pipeline_data
-MSCA_ASSMEBLIES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
-HAL_BIN = ${MSCA_PROJ_DIR}/src/progressiveCactus/submodules/hal/bin
-PYCBIO_DIR = ${MSCA_PROJ_DIR}/src/pycbio
-TRANS_MAP_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/transMap/${TRANS_MAP_VERSION}
-
-
-# programs
-# FIXME: integrate geneCheck changes to Ian's tree
-geneCheck = ~markd/compbio/genefinding/GeneTools/bin/x86_64/opt/gene-check
-halLiftover = ${HAL_BIN}/halLiftover
-
-
-halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
-ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}/genome
-srcHgDb= mm10
-srcOrg = C57B6J
-# FIXME: includeing srcOrg below is a hack
-ifeq (${MSCA_VERSION},1411)
-mappedOrgs = 129S1 AJ AKRJ BALBcJ C3HHeJ C57B6J C57B6NJ CASTEiJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PWKPhJ SPRETEiJ WSBEiJ  Rattus
-else ifeq (${MSCA_VERSION},1412)
-mappedOrgs = 129S1 AJ AKRJ BALBcJ C3HHeJ C57B6J C57B6NJ CAROLIEiJ CASTEiJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PAHARIEiJ PWKPhJ Rattus SPRETEiJ WSBEiJ
-else
-$(error MSCA_VERSION=${MSCA_VERSION} not handled in makefile.
-endif
-
-# FIXME due to different naming conventions, there are rules at the bottom to create 2bit from
-# FASTA files
-genomeMap_129S1 = 129S1_SvImJ
-genomeMap_AJ = A_J
-genomeMap_AKRJ = AKR_J
-genomeMap_BALBcJ = BALB_cJ
-genomeMap_C3HHeJ = C3H_HeJ
-genomeMap_C57B6NJ = C57BL_6NJ
-genomeMap_CAROLIEiJ = CAROLI_EiJ
-genomeMap_CASTEiJ = CAST_EiJ
-genomeMap_CBAJ = CBA_J
-genomeMap_DBA2J = DBA_2J
-genomeMap_FVBNJ = FVB_NJ
-genomeMap_LPJ = LP_J
-genomeMap_C57B6J = Mus_musculus.GRCm38.dna_sm.primary_assembly
-genomeMap_NODShiLtJ = NOD_ShiLtJ
-genomeMap_NZOHlLtJ = NZO_HlLtJ
-genomeMap_PAHARIEiJ = Pahari_EiJ
-genomeMap_PWKPhJ = PWK_PhJ
-genomeMap_Rattus = Rattus_norvegicus.Rnor_5.0.dna_sm.toplevel
-genomeMap_SPRETEiJ = SPRET_EiJ
-genomeMap_WSBEiJ = WSB_EiJ
-
+include defs.mk
 
 ###
-# make stuff
-##
-host=$(shell hostname)
-ppid=$(shell echo $$PPID)
-tmpExt = ${host}.${ppid}.tmp
-
-.SECONDARY:  # keep intermediates
-SHELL = /bin/bash -beEu
-export SHELLOPTS=pipefail
-export PATH:=${PATH}:${PYCBIO_DIR}/bin:./bin
-ifneq ($(wildcard ${HOME}/.hg.rem.conf),)
-    # if this exists, it allows running on kolossus because of remote access to UCSC databases
-    export HGDB_CONF=${HOME}/.hg.rem.conf
-endif
-# insist on group-writable umask
-ifneq ($(shell umask),0002)
-     $(error umask must be 0002)
-endif
-
-##
-# GENCODE src annotations
-##
-srcGencodeBasic = wgEncodeGencodeBasic${GENCODE_VERSION}
-srcGencodeComp = wgEncodeGencodeComp${GENCODE_VERSION}
-srcGencodePseudo = wgEncodeGencodePseudoGene${GENCODE_VERSION}
-srcGencodeAttrs = wgEncodeGencodeAttrs${GENCODE_VERSION}
-srcGencodeSubsets = ${srcGencodeBasic} ${srcGencodeComp} ${srcGencodePseudo}
-srcGencodeDataDir = ${TRANS_MAP_DIR}/data
-srcAttrsTsv = ${srcGencodeDataDir}/${srcGencodeAttrs}.tsv
-srcGencodeAllGp = ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.gp}
-srcGencodeAllFa = ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.fa}
-srcGencodeAllPsl = ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.psl}
-srcGencodeAllCds = ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.cds}
-srcGencodeAllSizes = ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.sizes}
-srcGencodeAllBed = ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.bed}
-srcGencodeAllCheck =  ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.gene-check}
-srcGencodeAllCheckDetails =  ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.gene-check-details}
-srcGencodeCheckBed =  ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.gene-check.bed}
-srcGencodeAllCheckDetailsBed =  ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.gene-check-details.bed}
-srcGencodeAllCheckStats =  ${srcGencodeSubsets:%=${srcGencodeDataDir}/%.gene-check.stats}
-
-
-##
-# mappings  These are only define when mapTargetOrg is defined by recurisve make
-# mapTargetOrg= specifies the target organism
-##
+# mappings
+# These are only defined when mapTargetOrg is defined by recursive make: mapTargetOrg= specifies the target organism
+###
 ifneq (${mapTargetOrg},)
-transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
+TRANSMAP_DATA_DIR = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 
-transMapGencodeBasic = transMapGencodeBasic${GENCODE_VERSION}
-transMapGencodeComp = transMapGencodeComp${GENCODE_VERSION}
-transMapGencodePseudo = transMapGencodePseudoGene${GENCODE_VERSION}
-transMapGencodeAttrs = transMapGencodeAttrs${GENCODE_VERSION}
-transMapGencodeSubsets = ${transMapGencodeBasic} ${transMapGencodeComp} ${transMapGencodePseudo}
+# sequence files needed
+targetFasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fa
+targetTwoBit = ${ASM_GENOMES_DIR}/${mapTargetOrg}.2bit
+targetChromSizes = ${ASM_GENOMES_DIR}/${mapTargetOrg}.chrom.sizes
 
 # block transMap
-transMapMappedRegionIdAllPsl = ${transMapGencodeSubsets:%=${transMapDataDir}/%.region.idpsl}
-transMapMappedBlockAllPsl = ${transMapGencodeSubsets:%=${transMapDataDir}/%.block.psl}
-transMapMappedBlockAllMapInfo = ${transMapGencodeSubsets:%=${transMapDataDir}/%.block.mapinfo}
+transMapMappedRegionIdAllPsl = ${transMapGencodeSubsets:%=${TRANSMAP_DATA_DIR}/%.region.idpsl}
+transMapMappedBlockAllPsl = ${transMapGencodeSubsets:%=${TRANSMAP_DATA_DIR}/%.block.psl}
+transMapMappedBlockAllMapInfo = ${transMapGencodeSubsets:%=${TRANSMAP_DATA_DIR}/%.block.mapinfo}
 
 # chained (final results)
-transMapChainedAllPsls = ${transMapGencodeSubsets:%=${transMapDataDir}/%.psl}
-transMapChainedAllQstats = ${transMapGencodeSubsets:%=${transMapDataDir}/%.qstats}
+transMapChainedAllPsls = ${transMapGencodeSubsets:%=${TRANSMAP_DATA_DIR}/%.psl}
 
-# geneCheck of mapped
-transMapEvalAllGp = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gp}
-transMapEvalAllGeneCheck = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gene-check}
-transMapEvalAllGeneCheckDetails = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gene-check-details}
-transMapEvalAllGeneCheckStats = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gene-check.stats}
-transMapEvalAllGeneCheckBed = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gene-check.bed}
-transMapEvalAllGeneCheckDetailsBed = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gene-check-details.bed}
+# final transMap predicted transcript annotations
+transMapEvalAllGp = ${transMapGencodeSubsets:%=${TRANSMAP_DATA_DIR}/%.gp}
 endif
 
 all: srcData transMap
@@ -136,9 +29,7 @@ all: srcData transMap
 ###
 # src genes
 ###
-srcData: ${srcAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllFa} ${srcGencodeAllPsl} \
-	${srcGencodeAllCds} ${srcGencodeAllSizes} ${srcGencodeAllBed} \
-	${srcGencodeAllCheck} ${srcGencodeAllCheckDetails} ${srcGencodeCheckBed} ${srcGencodeAllCheckDetailsBed} ${srcGencodeAllCheckStats}
+srcData: ${srcAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAllFa} ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
 
 # awk expression to edit chrom names in UCSC format.  Assumse all alts are version 1.
 # chr1_GL456211_random, chrUn_GL456239
@@ -147,17 +38,12 @@ editUcscChrom = $$chromCol=="chrM"{$$chromCol="MT"} {$$chromCol = gensub("_rando
 
 ${srcAttrsTsv}:
 	@mkdir -p $(dir $@)
-	hgsql -e 'select * from ${srcGencodeAttrs}' ${srcHgDb} >$@.${tmpExt}
+	hgsql -e 'select geneId,geneName,geneType,transcriptId,transcriptType from ${srcGencodeAttrs}' ${srcOrgHgDb} > $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-${srcGencodeDataDir}/%.gp:
+${SRC_GENCODE_DATA_DIR}/%.gp:
 	@mkdir -p $(dir $@)
-	hgsql -Ne 'select * from $*' ${srcHgDb} | cut -f 2- | tawk -v chromCol=2 '${editUcscChrom}' >$@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${srcGencodeDataDir}/%.fa:
-	@mkdir -p $(dir $@)
-	getRnaPred ${srcHgDb} $* all $@.${tmpExt}
+	hgsql -Ne 'select * from $*' ${srcOrgHgDb} | cut -f 2- | tawk -v chromCol=2 '${editUcscChrom}' > $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${srcGencodeDataDir}/%.bed: ${srcGencodeDataDir}/%.gp
@@ -165,110 +51,100 @@ ${srcGencodeDataDir}/%.bed: ${srcGencodeDataDir}/%.gp
 	genePredToBed $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-${srcGencodeDataDir}/%.cds: ${srcGencodeDataDir}/%.psl
-	@
-${srcGencodeDataDir}/%.psl:
+${SRC_GENCODE_DATA_DIR}/%.fa:
 	@mkdir -p $(dir $@)
-	genePredToFakePsl ${srcHgDb} $* stdout ${srcGencodeDataDir}/$*.cds | tawk -v chromCol=14 '${editUcscChrom}' >$@.${tmpExt}
+	getRnaPred ${srcOrgHgDb} $* all $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-${srcGencodeDataDir}/%.sizes: ${srcGencodeDataDir}/%.psl
-	tawk '{print $$10,$$11}' $< >$@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${transMapDataDir}/%.qstats: %.psl ${srcGencodeDataDir}/%.sizes
-	pslStats -queryStats -queries=${srcGencodeDataDir}/$*.sizes $< $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-# gene-check of source
-${srcGencodeDataDir}/%.gene-check-details: ${srcGencodeDataDir}/%.gene-check
+${SRC_GENCODE_DATA_DIR}/%.cds: ${SRC_GENCODE_DATA_DIR}/%.psl
 	@
-${srcGencodeDataDir}/%.gene-check: ${srcGencodeDataDir}/%.gp ${MSCA_ASSMEBLIES_DIR}/${srcOrg}.2bit
+
+${SRC_GENCODE_DATA_DIR}/%.psl:
 	@mkdir -p $(dir $@)
-	sort -k2,2 -k 4,4n $< | ${geneCheck} --allow-non-coding --genome-seqs=${MSCA_ASSMEBLIES_DIR}/${srcOrg}.2bit --details-out=$@-details stdin $@.${tmpExt}
+	genePredToFakePsl ${srcOrgHgDb} $* stdout ${SRC_GENCODE_DATA_DIR}/$*.cds | tawk -v chromCol=14 '${editUcscChrom}' >$@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-####
+${queryFasta}:
+	@mkdir -p $(dir $@)
+	n="$(shell basename $@ | cut -d "." -f 1)" ;\
+	${HAL_BIN_DIR}/hal2fasta ${halFile} $$n > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${queryTwoBit}: ${queryFasta}
+	@mkdir -p $(dir $@)
+	faToTwoBit ${queryFasta} $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${queryChromSizes}: ${queryTwoBit}
+	@mkdir -p $(dir $@)
+	twoBitInfo ${queryTwoBit} stdout | sort -k2rn > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+
+###
 # transMap recursive target for each organism
-####
+###
 transMap: ${mappedOrgs:%=%.transMap}
 
-%.transMap:
+%.transMap: srcData
 	${MAKE} -f rules/transMap.mk transMapOrg mapTargetOrg=$*
 
+
 ifneq (${mapTargetOrg},)
-transMapOrg: ${transMapMappedRegionIdAllPsl} ${transMapMappedBlockAllPsl} ${transMapChainedAllPsls} ${transMapChainedAllQstats} ${transMapEvalAllGp} \
-	${transMapEvalAllGeneCheck} ${transMapEvalAllGeneCheckDetails} ${transMapEvalAllGeneCheckStats} ${transMapEvalAllGeneCheckBed} \
-	${transMapEvalAllGeneCheckDetailsBed}
+transMapOrg: ${targetFasta} ${targetTwoBit} ${targetChromSizes} ${transMapMappedRegionIdAllPsl} ${transMapMappedBlockAllPsl} ${transMapChainedAllPsls} ${transMapEvalAllGp}
 
+###
+# extracting sequences for this mappedOrg from HAL
+###
+${targetFasta}:
+	@mkdir -p $(dir $@)
+	n="$(shell basename $@ | cut -d "." -f 1)" ;\
+	${HAL_BIN_DIR}/hal2fasta ${halFile} $$n > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
 
-####
+${targetTwoBit}: ${targetFasta}
+	@mkdir -p $(dir $@)
+	faToTwoBit $< $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+${targetChromSizes}: ${targetTwoBit}
+	@mkdir -p $(dir $@)
+	n="$(shell basename $@ | cut -d "." -f 1)" ;\
+	${HAL_BIN_DIR}/halStats --chromSizes $$n ${halFile} > $@.${tmpExt}
+	mv -f $@.${tmpExt} $@
+
+###
 # mapping
-#
-${transMapDataDir}/transMap%.region.idpsl: ${srcGencodeDataDir}/wgEncode%.bed
+###
+${TRANSMAP_DATA_DIR}/transMap%.region.idpsl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.bed
 	@mkdir -p $(dir $@)
-	${halLiftover} --tab --outPSLWithName ${halFile} ${srcOrg} $< ${mapTargetOrg}  $@.${tmpExt}
+	${HAL_BIN_DIR}/halLiftover --tab --outPSLWithName ${halFile} ${srcOrg} $< ${mapTargetOrg} $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-${transMapDataDir}/transMap%.block.mapinfo: ${transMapDataDir}/transMap%.block.psl
-	@
+${TRANSMAP_DATA_DIR}/transMap%.block.mapinfo: ${TRANSMAP_DATA_DIR}/transMap%.block.psl
+
 # map and update match stats, which likes target sort for speed
-${transMapDataDir}/transMap%.block.psl: ${transMapDataDir}/transMap%.region.idpsl ${srcGencodeDataDir}/wgEncode%.psl  ${srcGencodeDataDir}/wgEncode%.fa
+${TRANSMAP_DATA_DIR}/transMap%.block.psl: ${TRANSMAP_DATA_DIR}/transMap%.region.idpsl ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl  ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa  ${targetTwoBit}
 	@mkdir -p $(dir $@)
-	pslMap -mapFileWithInQName -mapInfo=${transMapDataDir}/transMap$*.block.mapinfo ${srcGencodeDataDir}/wgEncode$*.psl $< /dev/stdout \
-	    | sort -k 14,14 -k 16,16n \
-	    | pslRecalcMatch /dev/stdin ${MSCA_ASSMEBLIES_DIR}/${mapTargetOrg}.2bit ${srcGencodeDataDir}/wgEncode$*.fa $@.${tmpExt}
+	pslMap -mapFileWithInQName -mapInfo=${TRANSMAP_DATA_DIR}/transMap$*.block.mapinfo ${SRC_GENCODE_DATA_DIR}/wgEncode$*.psl $< /dev/stdout \
+		| sort -k 14,14 -k 16,16n \
+		| pslRecalcMatch /dev/stdin ${targetTwoBit} ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-####
+###
 # chaining
-#
-${transMapDataDir}/%.psl: ${transMapDataDir}/%.block.psl
+###
+${TRANSMAP_DATA_DIR}/%.psl: ${TRANSMAP_DATA_DIR}/%.block.psl
 	@mkdir -p $(dir $@)
 	simpleChain -outPsl $< stdout | bin/pslQueryUniq >$@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-##
-# gene validations
-#
-${transMapDataDir}/transMap%.gp: ${transMapDataDir}/transMap%.psl ${srcGencodeDataDir}/wgEncode%.cds
+###
+# final transMap genes
+###
+${TRANSMAP_DATA_DIR}/transMap%.gp: ${TRANSMAP_DATA_DIR}/transMap%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.cds
 	@mkdir -p $(dir $@)
-	mrnaToGene -keepInvalid -quiet -genePredExt -ignoreUniqSuffix -insertMergeSize=0 -cdsFile=${srcGencodeDataDir}/wgEncode$*.cds $< $@.${tmpExt}
+	mrnaToGene -keepInvalid -quiet -genePredExt -ignoreUniqSuffix -insertMergeSize=0 -cdsFile=${SRC_GENCODE_DATA_DIR}/wgEncode$*.cds $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-${transMapDataDir}/%.gene-check-details: ${transMapDataDir}/%.gene-check
-	@
-${transMapDataDir}/%.gene-check: ${transMapDataDir}/%.gp ${MSCA_ASSMEBLIES_DIR}/${mapTargetOrg}.2bit
-	@mkdir -p ${transMapDataDir}
-	sort -k2,2 -k 4,4n $< | ${geneCheck} --allow-non-coding --genome-seqs=${MSCA_ASSMEBLIES_DIR}/${mapTargetOrg}.2bit --details-out=$@-details stdin $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-${transMapDataDir}/transMap%.qstats: ${transMapDataDir}/transMap%.psl ${srcGencodeDataDir}/wgEncode%.sizes
-	pslStats -queryStats -queries=${srcGencodeDataDir}/wgEncode$*.sizes $< $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
 endif
-
-##
-# common rules
-#
-%.basestats: %.psl
-	@mkdir -p $(dir $@)
-	mrnaBasesMapped $< ${srcBasicPsl} $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-%.gene-check.stats: %.gene-check
-	@mkdir -p $(dir $@)
-	geneCheckStats $< $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-%.gene-check.bed: %.gp %.gene-check
-	@mkdir -p $(dir $@)
-	genePredCheckToBed $*.gp $*.gene-check $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-%.gene-check-details.bed: %.gene-check-details
-	@mkdir -p $(dir $@)
-	genePredCheckDetailsToBed $< $@.${tmpExt}
-	mv -f $@.${tmpExt} $@
-
-
