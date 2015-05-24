@@ -1,4 +1,4 @@
-include config.mk
+include ../pipeline/config.mk
 
 # base directory definitions
 MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
@@ -11,8 +11,9 @@ SRC_GENCODE_DATA_DIR = ${TRANS_MAP_DIR}/data
 ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 ANNOTATION_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
 
-# files used by pipeline
+# HAL file with simple and browser database names (e.g. Mus_XXX_1411)
 halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
+halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser.hal
 
 # GENCODE databases being compared
 gencodeBasic = GencodeBasic${GENCODE_VERSION}
@@ -60,12 +61,22 @@ export SHELLOPTS := pipefail
 export PATH := ${PATH}:${PYCBIO_DIR}/bin:./bin
 export PYTHONPATH := ./:${PYTHONPATH}
 
+ifneq (${HOSTNAME},hgwdev)
 ifneq ($(wildcard ${HOME}/.hg.rem.conf),)
     # if this exists, it allows running on kolossus because of remote access to UCSC databases
+    # however must load databases on hgwdev
     export HGDB_CONF=${HOME}/.hg.rem.conf
+endif
 endif
 
 # insist on group-writable umask
 ifneq ($(shell umask),0002)
      $(error umask must be 0002)
 endif
+
+ifeq (${TMPDIR},)
+     $(error TMPDIR environment variable not set)
+endif
+
+KENT_DIR = ${HOME}/kent
+KENT_HG_LIB_DIR = ${KENT_DIR}/src/hg/lib
