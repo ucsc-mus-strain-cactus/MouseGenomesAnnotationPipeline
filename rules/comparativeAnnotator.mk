@@ -14,6 +14,7 @@ transMapEvalAllGp = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencode
 srcGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
 jobTreeDir = $(shell pwd)/.${gencodeSubset}_comparativeAnnotatorJobTree
 log = $(shell pwd)/${gencodeSubset}_jobTree.log
+METRICS_DIR = ${comparativeAnnotationDir}/metrics
 endif
 
 
@@ -50,9 +51,10 @@ ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapE
 
 ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
-	python scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${genomes} \
+	cd ../comparativeAnnotator ;\
+	python scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --header ${MSCA_VERSION} --attrs ${srcAttrsTsv} \
-	--annotationBed ${srcCombinedCheckBed}
+	--annotationGp ${srcGp}
 	touch $@
 
 endif
