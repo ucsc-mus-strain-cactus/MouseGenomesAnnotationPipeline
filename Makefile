@@ -4,5 +4,6 @@ all: transMap comparativeAnnotator
 transMap:
 	${MAKE} -f rules/transMap.mk
 
-comparativeAnnotator:
+comparativeAnnotator: transMap
 	${MAKE} -f rules/comparativeAnnotator.mk
+
