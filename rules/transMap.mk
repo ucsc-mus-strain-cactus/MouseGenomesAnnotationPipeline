@@ -56,8 +56,10 @@ ${SRC_GENCODE_DATA_DIR}/%.fa:
 	getRnaPred ${srcOrgHgDb} $* all $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
+# sillyness to make multiple productions work in make.
+# touch ensures that CDS is newer than psl
 ${SRC_GENCODE_DATA_DIR}/%.cds: ${SRC_GENCODE_DATA_DIR}/%.psl
-
+	touch $@
 ${SRC_GENCODE_DATA_DIR}/%.psl:
 	@mkdir -p $(dir $@)
 	genePredToFakePsl ${srcOrgHgDb} $* stdout ${SRC_GENCODE_DATA_DIR}/$*.cds | tawk -v chromCol=14 '${editUcscChrom}' >$@.${tmpExt}
