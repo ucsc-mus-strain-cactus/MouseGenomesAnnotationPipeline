@@ -11,6 +11,10 @@ SRC_GENCODE_DATA_DIR = ${TRANS_MAP_DIR}/data
 ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 ANNOTATION_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
 
+# genome and organisms
+allOrgs = ${srcOrg} ${mappedOrgs}
+
+
 # HAL file with simple and browser database names (e.g. Mus_XXX_1411)
 halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
 halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser.hal

@@ -14,3 +14,4 @@ COMPARATIVE_ANNOTATOR_VERSION = 2015-05-20
 # source organism information (reference mouse)
 srcOrg = C57B6J
 srcOrgHgDb = mm10
+

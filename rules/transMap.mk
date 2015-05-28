@@ -57,7 +57,6 @@ ${SRC_GENCODE_DATA_DIR}/%.fa:
 	mv -f $@.${tmpExt} $@
 
 ${SRC_GENCODE_DATA_DIR}/%.cds: ${SRC_GENCODE_DATA_DIR}/%.psl
-	@
 
 ${SRC_GENCODE_DATA_DIR}/%.psl:
 	@mkdir -p $(dir $@)
