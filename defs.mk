@@ -54,6 +54,8 @@ queryFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 queryTwoBit = ${ASM_GENOMES_DIR}/${srcOrg}.2bit
 queryChromSizes = ${ASM_GENOMES_DIR}/${srcOrg}.chrom.sizes
 
+# get correct version of python
+
 # makefile stuff
 host=$(shell hostname)
 ppid=$(shell echo $$PPID)
@@ -62,7 +64,10 @@ tmpExt = ${host}.${ppid}.tmp
 .SECONDARY:  # keep intermediates
 SHELL = /bin/bash -beEu
 export SHELLOPTS := pipefail
-export PATH := ${PATH}:${PYCBIO_DIR}/bin:./bin
+PYTHON_BIN = /hive/groups/recon/local/bin
+
+python = ${PYTHON_BIN}/python
+export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${PATH}
 export PYTHONPATH := ./:${PYTHONPATH}
 
 ifneq (${HOSTNAME},hgwdev)
