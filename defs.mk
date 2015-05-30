@@ -64,7 +64,9 @@ tmpExt = ${host}.${ppid}.tmp
 .SECONDARY:  # keep intermediates
 SHELL = /bin/bash -beEu
 export SHELLOPTS := pipefail
-PYTHON_BIN = /hive/groups/recon/local/bin
+# TODO: install pyfaidx on recon python so we can use it
+#PYTHON_BIN = /hive/groups/recon/local/bin
+PYTHON_BIN = /cluster/home/ifiddes/bin
 
 python = ${PYTHON_BIN}/python
 export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${PATH}

@@ -12,8 +12,8 @@ comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 transMapChainedAllPsls = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.psl}
 transMapEvalAllGp = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.gp}
 srcGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
-jobTreeDir = $(shell pwd)/.${gencodeSubset}_comparativeAnnotatorJobTree
-log = $(shell pwd)/${gencodeSubset}_jobTree.log
+jobTreeDir = $(shell pwd)/.${gencodeSubset}_${MSCA_VERSION}_comparativeAnnotatorJobTree
+log = $(shell pwd)/${gencodeSubset}_${MSCA_VERSION}_jobTree.log
 METRICS_DIR = ${comparativeAnnotationDir}/metrics
 endif
 
@@ -30,19 +30,19 @@ annotationGencodeSubset: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE
 
 ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp}
 	@mkdir -p $(dir $@)
-	rm -rf ${jobTreeDir}
+	if [ -d ${jobTreeDir} ]; then rm -rf ${jobTreeDir}; fi
 	if [ "${batchSystem}" = "parasol" ]; then \
 		cwd="$(shell pwd)" ;\
-		ssh ku -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
+		ssh ku -t "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
-		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
-		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refTwoBit ${queryTwoBit} \
+		python src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
+		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
 		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log}" ;\
 	else \
-		${python} ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
-		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refTwoBit ${queryTwoBit} \
+		python ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
+		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
 		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log} ;\
@@ -52,7 +52,7 @@ ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapE
 ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator ;\
-	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
+	python scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --header ${MSCA_VERSION} --attrs ${srcAttrsTsv} \
 	--annotationGp ${srcGp}
 	touch $@
