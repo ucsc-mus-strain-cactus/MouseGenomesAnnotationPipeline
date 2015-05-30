@@ -5,8 +5,8 @@
 ####################################################################################################
 
 
-#MSCA_VERSION = 1411
-MSCA_VERSION = 1504
+MSCA_VERSION = 1411
+#MSCA_VERSION = 1504
 
 ifeq (${MSCA_VERSION},1504)
 mappedOrgs = Rattus 129S1 AJ AKRJ BALBcJ C3HHeJ C57B6NJ CASTEiJ CBAJ DBA2J FVBNJ LPJ NODShiLtJ NZOHlLtJ PWKPhJ SPRETEiJ WSBEiJ CAROLIEiJ PAHARIEiJ
