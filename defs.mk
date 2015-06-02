@@ -14,7 +14,6 @@ ANNOTATION_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/comparativeAnnotat
 # genome and organisms
 allOrgs = ${srcOrg} ${mappedOrgs}
 
-
 # HAL file with simple and browser database names (e.g. Mus_XXX_1411)
 halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
 halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser.hal
@@ -54,7 +53,8 @@ queryFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 queryTwoBit = ${ASM_GENOMES_DIR}/${srcOrg}.2bit
 queryChromSizes = ${ASM_GENOMES_DIR}/${srcOrg}.chrom.sizes
 
-# get correct version of python
+# comparative anotations types produced
+compAnnTypes = alignmentErrors allProblems assemblyErrors comparativeAnnotation inFrameStop interestingBiology
 
 # makefile stuff
 host=$(shell hostname)
