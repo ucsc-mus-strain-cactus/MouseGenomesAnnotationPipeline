@@ -16,7 +16,8 @@ allOrgs = ${srcOrg} ${mappedOrgs}
 
 # HAL file with simple and browser database names (e.g. Mus_XXX_1411)
 halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
-halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser_uncompressed_contiguous.hal
+halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser.hal
+#halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser_uncompressed_contiguous.hal
 
 # GENCODE databases being compared
 gencodeBasic = GencodeBasic${GENCODE_VERSION}
