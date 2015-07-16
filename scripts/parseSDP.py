@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""Parses the SVs contained in a .sdp.tab file."""
+"""Parses the SVs contained in a .sdp.tab file. If run as a script,
+then outputs a bed file containing the SVs."""
 import sys
 
 class SV:
@@ -123,8 +124,9 @@ def parse_SDP(sdpFile):
         yield SV(row)
 
 if __name__ == '__main__':
-    classes = set()
+    # output a bed file
     for sv in parse_SDP(open(sys.argv[1])):
         for sample in sv.samples_affected():
-            classes.add(sv.svClass(sample))
-    print classes
+            breakpoints = sv.breakpoints(sample)
+            print "%s\t%d\t%d\t%s" % (breakpoints[0], breakpoints[1],
+                                      breakpoints[2], sample + '\\' + sv.svClass(sample))

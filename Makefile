@@ -1,3 +1,4 @@
+.PHONY: test
 
 all: transMap comparativeAnnotator
 
@@ -7,3 +8,6 @@ transMap:
 comparativeAnnotator: transMap
 	${MAKE} -f rules/comparativeAnnotator.mk
 
+test:
+	python scripts/parseSDP_test.py
+	python -m doctest -v scripts/*.py
