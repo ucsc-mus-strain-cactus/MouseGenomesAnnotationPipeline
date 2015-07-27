@@ -1,5 +1,4 @@
 include defs.mk
-include rules/augustusReverseTransMap.mk
 
 # jobTree configuration
 batchSystem = parasol
@@ -8,45 +7,36 @@ maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 36000
 
-comparativeAnnotationDir = ${ANNOTATION_DIR}/augustus
-transMapDir = /cluster/home/ifiddes/mus_strain_data/pipeline_data/comparative/1504/augustus_transMap
-transMapChainedAllPsls = ${mappedOrgs:%=${transMapDir}/%.augustusTranscripts.psl}
-transMapEvalAllGp = ${mappedOrgs:%=${transMapDir}/%.augustusTranscripts.transMapped.gp}
-srcGps = ${mappedOrgs:%=${transMapDir}/%.augustusTranscripts.gp}
-jobTreeDir = $(shell pwd)/.augustus_${MSCA_VERSION}_comparativeAnnotatorJobTree
-log = $(shell pwd)/augustus_${MSCA_VERSION}_jobTree.log
+gencodeSubset = ${gencodeComp}
+comparativeAnnotationDir = ${ANNOTATION_DIR}_Augustus
+transMapChainedAllPsls = ${augustusOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.psl}
+transMapEvalAllGp = ${augustusOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.gp}
+srcGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
+augustusGps = ${augustusOrgs:%=/cluster/home/ifiddes/mus_strain_data/pipeline_data/comparative/1504/augustus/tmr/%.gp}
+jobTreeDir = $(shell pwd)/.Augustus_${gencodeSubset}_${MSCA_VERSION}_comparativeAnnotatorJobTree
+log = $(shell pwd)/Augustus_${gencodeSubset}_${MSCA_VERSION}_jobTree.log
 METRICS_DIR = ${comparativeAnnotationDir}/metrics
 
 
-all: annotation
+all: ${comparativeAnnotationDir}/DONE
 
-annotation: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE
-
-${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp}
+${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
 	rm -rf ${jobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
 		cwd="$(shell pwd)" ;\
 		ssh ku -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
-		${python} src/annotationPipeline.py --tgtGenomes ${srcOrg} --srcGenomes ${mappedOrgs} --tgtSizes ${targetChromSizes} \
-		--psls ${transMapChainedAllPsls} --tgtGps ${transMapEvalAllGp} --srcFastas ${targetFastaFiles} --tgtFastas ${queryFasta} \
-		--srcGps ${srcGps} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
+		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
+		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
-		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log}" ;\
+		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log}" ;\
 	else \
-		${python} ../comparativeAnnotator/src/annotationPipeline.py --tgtGenomes ${srcOrg} --srcGenomes ${mappedOrgs} --tgtSizes ${targetChromSizes} \
-		--psls ${transMapChainedAllPsls} --tgtGps ${transMapEvalAllGp} --srcFastas ${targetFastaFiles} --tgtFastas ${queryFasta} \
-		--srcGps ${srcGps} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		${python} ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
+		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
+		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
-		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log} ;\
+		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log} ;\
 	fi
-	touch $@
-
-${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
-	@mkdir -p $(dir $@)
-	cd ../comparativeAnnotator ;\
-	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
-	--comparativeAnnotationDir ${comparativeAnnotationDir} --header ${MSCA_VERSION} --attrs ${srcAttrsTsv} \
-	--annotationGp ${srcGp}
 	touch $@
