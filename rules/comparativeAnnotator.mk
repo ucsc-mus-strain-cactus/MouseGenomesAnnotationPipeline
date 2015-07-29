@@ -18,7 +18,10 @@ METRICS_DIR = ${comparativeAnnotationDir}/metrics
 endif
 
 
-all: annotation
+all: checkout annotation
+
+checkout:
+	cd ../comparativeAnnotator && git checkout master && git pull
 
 annotation: ${gencodeSubsets:%=%.annotation}
 
