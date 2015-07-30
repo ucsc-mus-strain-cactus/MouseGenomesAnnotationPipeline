@@ -24,14 +24,14 @@ consensusDir = ${comparativeAnnotationDir}/consensus
 augustusStatsDir = ${comparativeAnnotationDir}/augustus_stats
 augustusBeds = ${augustusOrgs:%=${augustusStatsDir}/%.bed}
 augustusFastas = ${augustusOrgs:%=${augustusStatsDir}/%.fa}
-
+augustusFaidx = ${augustusOrgs:%=${augustusStatsDir}/%.fa.fai}
 
 all: checkout ${comparativeAnnotationDir}/DONE consensus
 
 checkout:
-	cd ../comparativeAnnotator && git checkout augustus && git pull
+	cd ../comparativeAnnotator && git checkout augustus
 
-${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
+${comparativeAnnotationDir}/DONE: checkout ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
 	rm -rf ${comparativeJobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
@@ -54,7 +54,7 @@ ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapE
 
 consensus: prepareTranscripts alignTranscripts makeConsensus
 
-prepareTranscripts: ${augustusBeds} ${augustusFastas}
+prepareTranscripts: ${augustusBeds} ${augustusFastas} ${augustusFaidx}
 
 ${augustusStatsDir}/%.bed: ${TMR_DIR}/%.gp
 	@mkdir -p $(dir $@)
@@ -66,9 +66,12 @@ ${augustusStatsDir}/%.fa: ${augustusStatsDir}/%.bed
 	fastaFromBed -bed $< -fi ${ASM_GENOMES_DIR}/$*.fa -fo $@.${tmpExt} -s -split -name
 	mv -f $@.${tmpExt} $@
 
+${augustusStatsDir}/%.fa.fai: ${augustusStatsDir}/%.fa
+	samtools faidx $<
+
 alignTranscripts: ${comparativeAnnotationDir}/AUG_ALIGNED
 
-${comparativeAnnotationDir}/AUG_ALIGNED:
+${comparativeAnnotationDir}/AUG_ALIGNED: checkout ${augustusBeds} ${augustusFastas} ${augustusFaidx}
 	@mkdir -p $(dir $@)
 	rm -rf ${alignJobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
@@ -77,20 +80,19 @@ ${comparativeAnnotationDir}/AUG_ALIGNED:
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
 		${python} scripts/alignAugustus.py --jobTree ${alignJobTreeDir} --batchSystem ${batchSystem} \
 		--maxCpus ${maxCpus} --defaultMemory ${defaultMemory} --genomes ${augustusOrgs} --refFasta ${srcFa} \
-		--outDir ${augustusStatsDir} &> ${alignLog}" ;\
+		--outDir ${augustusStatsDir} --augustusStatsDir ${augustusStatsDir} &> ${alignLog}" ;\
 	else \
 		${python} scripts/alignAugustus.py --jobTree ${alignJobTreeDir} --batchSystem ${batchSystem} \
 		--maxThreads ${maxThreads} --defaultMemory ${defaultMemory} --genomes ${augustusOrgs} --refFasta ${srcFa} \
-		--outDir ${augustusStatsDir} &> ${alignLog}" ;\
+		--outDir ${augustusStatsDir} --augustusStatsDir ${augustusStatsDir}  &> ${alignLog} ;\
 	fi
 	touch $@
 
-makeConsensus: consensus plots
+makeConsensus: ${comparativeAnnotationDir}/CONSENSUS_DONE
 
-consensus: ${comparativeAnnotationDir}/CONSENSUS_DONE
-
-${comparativeAnnotationDir}/CONSENSUS_DONE:
+${comparativeAnnotationDir}/CONSENSUS_DONE: ${comparativeAnnotationDir}/AUG_ALIGNED
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} scripts/consensus.py --genomes ${augustusOrgs} \
 	--compAnnPath ${comparativeAnnotationDir} --statsDir ${augustusStatsDir} --outDir ${consensusDir} \
 	--attributePath ${srcAttrsTsv} --augGps ${augGps} --tmGps ${transMapEvalAllGp}
+	touch $@

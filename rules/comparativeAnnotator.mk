@@ -21,7 +21,7 @@ endif
 all: checkout annotation
 
 checkout:
-	cd ../comparativeAnnotator && git checkout master && git pull
+	cd ../comparativeAnnotator && git checkout master
 
 annotation: ${gencodeSubsets:%=%.annotation}
 
