@@ -1,0 +1,48 @@
+#!/bin/env python
+""""
+jobTree program to generate UCSC chains and nets between two genomes in a HAL file.
+"""
+
+import sys,os
+sys.path.insert(0, "/hive/groups/recon/local/pycbio/lib")
+
+# use jobTree in comparativeAnnotator module for now
+myBinDir = os.path.abspath(os.path.normpath(os.path.dirname(sys.argv[0])))
+sys.path.insert(0, myBinDir+ "/../../comparativeAnnotator")
+sys.path.insert(0, myBinDir+ "/../lib")
+from optparse import OptionParser
+from jobTree.scriptTree.stack import Stack
+from musstrain import ucscChainNet
+
+# FIXME: jobTree use environment rather than sys.path
+os.environ["PYTHONPATH"] = ":".join(sys.path)
+
+class CmdOpts(object):
+    usage="""%prog [options] hal queryGenome queryTwoBit targetGenome targetTwoBit chainFile netFile [synChainFile synNetFile]
+
+    Perform UCSC chain and netting between two genomes from a HAL alignment.
+    also builds synthetic-filtered nets if specified
+"""
+    parser = OptionParser()
+    def __init__(self):
+        parser = OptionParser(usage=CmdOpts.usage)
+        Stack.addJobTreeOptions(parser)
+        argNames = ("hal", "queryGenome", "queryTwoBit", "targetGenome", "targetTwoBit", "chainFile", "netFile")
+        optArgNames = ("synChainFile", "synNetFile")
+        (opts, args) = parser.parse_args()
+        if len(argNames) < len(args) < len(argNames)+len(optArgNames):
+            parser.error("wrong number of arguments")
+        # convert large number of positionals to files.
+        for name in optArgNames:  # initialize optional
+            setattr(self, name, None)
+        for (name, val) in zip(argNames+optArgNames, args):  # relies on zip truncation
+            setattr(self, name, val)
+        self.__dict__.update(opts.__dict__)
+
+def main():
+    "begin here"
+    opts = CmdOpts()
+    ucscChainNet.chainNetStartup(opts)
+   
+if __name__ == '__main__':
+    main()
