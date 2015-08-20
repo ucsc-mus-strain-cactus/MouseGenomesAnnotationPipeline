@@ -1,9 +1,13 @@
 .PHONY: test
 
-all: transMap comparativeAnnotator
+all: chaining transMap comparativeAnnotator
 
-transMap:
+transMap: chaining
 	${MAKE} -f rules/transMap.mk
+
+chaining:
+	${MAKE} -f rules/chaining.mk
+
 
 comparativeAnnotator: transMap
 	${MAKE} -f rules/comparativeAnnotator.mk

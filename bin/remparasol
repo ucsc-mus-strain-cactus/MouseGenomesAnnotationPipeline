@@ -1,0 +1,15 @@
+#!/bin/bash -e
+# Trying to start multiple ssh commands once using parallel make
+# results in the error:
+#
+#   ssh_exchange_identification: Connection closed by remote host
+#
+# Assume this is caused by some kind of resource limit.  Instead
+# this uses the parasol command -host option to talk to paraHub
+# remotely.  Specifying this to jobTree as the parasol command
+# solves this issue.
+
+parasolCmd=/cluster/bin/parasol/x86_64/current/parasol
+parasolHost=ku
+
+exec $parasolCmd -host=$parasolHost "$@"

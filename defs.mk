@@ -12,18 +12,28 @@ ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 CHAIN_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chains
 ANNOTATION_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
 
-# genome and organisms
+###
+# genome and organisms.  The term `org' indicated the abbreviation for the organism,
+# the term `orgDb' refers to the browser database name, in the form Mus${org}_${MSCA_VERSION}
+###
 allOrgs = ${srcOrg} ${mappedOrgs}
+
+# this is function to generate the orgDb name from an org, use it with:
+#    $(call orgToOrgDbFunc,${yourOrg})
+orgToOrgDbFunc = Mus${0}_${MSCA_VERSION}
 
 # HAL file with simple and browser database names (e.g. Mus_XXX_1411)
 halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
 halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser.hal
-#halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser_uncompressed_contiguous.hal
 
 # LODs (based off the halBrowserFile)
 lodTxtFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_lod.txt
 lodDir = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_lods
 
+
+###
+# GENCODE gene sets
+###
 # GENCODE databases being compared
 gencodeBasic = GencodeBasic${GENCODE_VERSION}
 gencodeComp = GencodeComp${GENCODE_VERSION}
@@ -62,7 +72,25 @@ queryChromSizes = ${ASM_GENOMES_DIR}/${srcOrg}.chrom.sizes
 # comparative anotations types produced
 compAnnTypes = alignmentErrors allProblems assemblyErrors comparativeAnnotation inFrameStop interestingBiology
 
+###
+# chaining
+###
+CHAINING_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chaining/${CHAINING_VERSION}
+
+# call functions to obtain path to chain/net files, given a srcORg,targetOrg
+chainAllFunc = ${CHAINING_DIR}/${1}-${2}.all.chain.gz
+netAllFunc = ${CHAINING_DIR}/${1}-${2}.all.net.gz
+chainSynFunc = ${CHAINING_DIR}/${1}-${2}.syn.chain.gz
+netSynFunc = ${CHAINING_DIR}/${1}-${2}.syn.net.gz
+
+###
+# parasol
+###
+parasolHost = ku
+
+###
 # makefile stuff
+###
 host=$(shell hostname)
 ppid=$(shell echo $$PPID)
 tmpExt = ${host}.${ppid}.tmp
@@ -70,9 +98,7 @@ tmpExt = ${host}.${ppid}.tmp
 .SECONDARY:  # keep intermediates
 SHELL = /bin/bash -beEu
 export SHELLOPTS := pipefail
-# TODO: install pyfaidx on recon python so we can use it
-#PYTHON_BIN = /hive/groups/recon/local/bin
-PYTHON_BIN = /cluster/home/ifiddes/bin
+PYTHON_BIN = /hive/groups/recon/local/bin
 
 python = ${PYTHON_BIN}/python
 export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${PATH}
@@ -97,3 +123,7 @@ endif
 
 KENT_DIR = ${HOME}/kent
 KENT_HG_LIB_DIR = ${KENT_DIR}/src/hg/lib
+
+# root directory for jobtree jobs.  Subdirectories should
+# be create for each task
+jobTreeRootTmpDir = jobTree.tmp/${MSCA_VERSION}

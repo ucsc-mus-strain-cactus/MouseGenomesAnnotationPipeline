@@ -50,7 +50,8 @@ def pipelineCompress(cmds, outFile):
 def chainChromTarget(target, hal, queryGenome, queryChromSize, queryTwoBit, queryChrom, targetGenome, targetTwoBit, chainFile):
     "target to chain one chromosome"
     queryBed = makeChromBedTmp(target, hal, queryChrom, queryChromSize)
-    procOps.callProc([["halLiftover", "--inMemory", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
+    #  --inMemory caused out of memory in with some alignments with 31G allocated
+    procOps.callProc([["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
                       ["pslPosTarget", "/dev/stdin", "/dev/stdout"],
                       ["axtChain", "-psl", "-verbose=0", "-linearGap=medium", "/dev/stdin", targetTwoBit, queryTwoBit, chainFile]])
 

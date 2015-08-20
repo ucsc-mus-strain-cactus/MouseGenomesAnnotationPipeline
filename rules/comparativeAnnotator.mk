@@ -36,7 +36,7 @@ ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapE
 	rm -rf ${jobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
 		cwd="$(shell pwd)" ;\
-		ssh ku -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
+		ssh ${parasolHost} -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
 		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
