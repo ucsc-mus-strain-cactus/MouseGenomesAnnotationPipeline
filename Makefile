@@ -2,12 +2,14 @@
 
 all: chaining transMap comparativeAnnotator
 
-transMap: chaining
+transMap: chaining gencode
 	${MAKE} -f rules/transMap.mk
 
 chaining:
 	${MAKE} -f rules/chaining.mk
 
+gencode:
+	${MAKE} -f rules/gencode.mk
 
 comparativeAnnotator: transMap
 	${MAKE} -f rules/comparativeAnnotator.mk

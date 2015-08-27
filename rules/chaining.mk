@@ -23,7 +23,6 @@ jobTreeOpts = --defaultMemory=${defaultMemory} --stats --batchSystem=parasol --p
 queryTwoBit = ${ASM_GENOMES_DIR}/${queryOrg}.2bit
 targetTwoBit = ${ASM_GENOMES_DIR}/${targetOrg}.2bit
 
-
 chainAll = $(call chainAllFunc,${queryOrg},${targetOrg})
 netAll = $(call netAllFunc,${queryOrg},${targetOrg})
 chainSyn = $(call chainSynFunc,${queryOrg},${targetOrg})

@@ -1,6 +1,7 @@
 """"
 jobTree program to generate UCSC chains and nets between two genomes in a HAL file.
 In a library until import issue is fixed in toil.
+This avoids running targets if file exists (FIXME: doesn't check date).
 """
 import os
 from musstrain.hal import *
@@ -97,13 +98,15 @@ def synChainNetTarget(target, chainFile, netFile, synChainFile, synNetFile):
     
 def netsTarget(target, queryTwoBit, targetTwoBit, chainFile, netFile, synChainFile, synNetFile):
     "make nets and optional syntenic filtered chains"
-    target.addChildTargetFn(netTarget, (queryTwoBit, targetTwoBit, chainFile, netFile))
-    if synChainFile != None:
+    if not os.path.exists(netFile):
+        target.addChildTargetFn(netTarget, (queryTwoBit, targetTwoBit, chainFile, netFile))
+    if (synChainFile != None) and not (os.path.exists(synChainFile) and os.path.exists(synNetFile)):
         target.setFollowOnTargetFn(synChainNetTarget, (chainFile, netFile, synChainFile, synNetFile))
     
 def chainNetTarget(target, hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit, chainFile, netFile, synChainFile, synNetFile):
     "main entry point that does chain and then netting"
-    target.addChildTargetFn(chainTarget, (hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit, chainFile))
+    if not os.path.exists(chainFile):
+        target.addChildTargetFn(chainTarget, (hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit, chainFile))
     target.setFollowOnTargetFn(netsTarget, (queryTwoBit, targetTwoBit, chainFile, netFile, synChainFile, synNetFile))
 
 def chainNetStartup(opts):

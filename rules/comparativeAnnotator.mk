@@ -40,13 +40,13 @@ ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapE
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
 		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log}" ;\
 	else \
 		${python} ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log} ;\
 	fi
@@ -56,7 +56,7 @@ ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator ;\
 	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
-	--comparativeAnnotationDir ${comparativeAnnotationDir} --header ${MSCA_VERSION} --attrs ${srcAttrsTsv} \
+	--comparativeAnnotationDir ${comparativeAnnotationDir} --header ${MSCA_VERSION} --attrs ${srcGencodeAttrsTsv} \
 	--annotationGp ${srcGp}
 	touch $@
 

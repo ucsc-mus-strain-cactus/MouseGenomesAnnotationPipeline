@@ -6,6 +6,7 @@ MSCA_DATA_DIR = ${MSCA_PROJ_DIR}/pipeline_data
 MSCA_ASSMEBLIES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 HAL_BIN_DIR = ${MSCA_PROJ_DIR}/src/progressiveCactus/submodules/hal/bin
 PYCBIO_DIR = ${MSCA_PROJ_DIR}/src/pycbio
+
 TRANS_MAP_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/transMap/${TRANS_MAP_VERSION}
 SRC_GENCODE_DATA_DIR = ${TRANS_MAP_DIR}/data
 ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
@@ -34,6 +35,7 @@ lodDir = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_lod
 ###
 # GENCODE gene sets
 ###
+
 # GENCODE databases being compared
 gencodeBasic = GencodeBasic${GENCODE_VERSION}
 gencodeComp = GencodeComp${GENCODE_VERSION}
@@ -41,33 +43,56 @@ gencodePseudo = GencodePseudoGene${GENCODE_VERSION}
 gencodeAttrs = GencodeAttrs${GENCODE_VERSION}
 gencodeSubsets = ${gencodeBasic} ${gencodeComp} ${gencodePseudo}
 
-# hgDb databases used in transMap/comparativeAnnotator
-transMapGencodeBasic = transMap${gencodeBasic}
-transMapGencodeComp = transMap${gencodeComp}
-transMapGencodePseudo = transMap${gencodePseudo}
-transMapGencodeAttrs = transMap${gencodeAttrs}
-transMapGencodeSubsets = ${transMapGencodeBasic} ${transMapGencodeComp} ${transMapGencodePseudo}
-
 # GENCODE src annotations based on hgDb databases above
 srcGencodeBasic = wgEncode${gencodeBasic}
 srcGencodeComp = wgEncode${gencodeComp}
 srcGencodePseudo = wgEncode${gencodePseudo}
 srcGencodeAttrs = wgEncode${gencodeAttrs}
 srcGencodeSubsets = ${srcGencodeBasic} ${srcGencodeComp} ${srcGencodePseudo}
-srcAttrsTsv = ${SRC_GENCODE_DATA_DIR}/${srcGencodeAttrs}.tsv
+srcGencodeAttrsTsv = ${SRC_GENCODE_DATA_DIR}/${srcGencodeAttrs}.tsv
 srcGencodeAllGp = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.gp}
 srcGencodeAllFa = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.fa}
 srcGencodeAllPsl = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.psl}
 srcGencodeAllCds = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.cds}
 srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
 
-# sequence files needed by comparativeAnnotator
-targetFastaFiles = ${mappedOrgs:%=${ASM_GENOMES_DIR}/%.fa}
-targetTwoBitFiles = ${mappedOrgs:%=${ASM_GENOMES_DIR}/%.2bit}
-targetChromSizes = ${mappedOrgs:%=${ASM_GENOMES_DIR}/%.chrom.sizes}
-queryFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
-queryTwoBit = ${ASM_GENOMES_DIR}/${srcOrg}.2bit
-queryChromSizes = ${ASM_GENOMES_DIR}/${srcOrg}.chrom.sizes
+###
+# transmap
+###
+
+# chaining methods used by transmap
+transMapChainingMethods = simpleChain all syn
+
+# call function to get transmap directory given org and chain method
+transMapDataDirFunc = ${TRANS_MAP_DIR}/transMap/${1}/${2}
+
+# hgDb tables used in transMap/comparativeAnnotator
+transMapGencodeBasic = transMap${gencodeBasic}
+transMapGencodeComp = transMap${gencodeComp}
+transMapGencodePseudo = transMap${gencodePseudo}
+transMapGencodeAttrs = transMap${gencodeAttrs}
+transMapGencodeSubsets = ${transMapGencodeBasic} ${transMapGencodeComp} ${transMapGencodePseudo}
+
+##
+# Sequence files
+##
+
+# call function to obtain a assembly file given an organism and extension
+asmFileFunc = ${ASM_GENOMES_DIR}/${1}.${2}
+
+# call functions to get particular assembly files given an organism
+asmFastaFunc = $(call asmFileFunc ${1},fa)
+asmTwoBitFunc = $(call asmFileFunc ${1},2bit)
+asmChromSizesFunc = $(call asmFileFunc ${1},chrom.sizes)
+
+# list of sequence files
+targetFastaFiles = ${mappedOrgs:%=$(call asmFastaFunc,%)}
+targetTwoBitFiles = ${mappedOrgs:%=$(call asmTwoBitFunc,%)}
+targetChromSizes = ${mappedOrgs:%=$(call asmChromSizesFunc,%)}
+queryFasta = $(call asmFastaFunc,${srcOrg})
+queryTwoBit = $(call asmTwoBitFunc,${srcOrg})
+queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
+
 
 # comparative anotations types produced
 compAnnTypes = alignmentErrors allProblems assemblyErrors comparativeAnnotation inFrameStop interestingBiology
@@ -77,11 +102,15 @@ compAnnTypes = alignmentErrors allProblems assemblyErrors comparativeAnnotation 
 ###
 CHAINING_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chaining/${CHAINING_VERSION}
 
-# call functions to obtain path to chain/net files, given a srcORg,targetOrg
-chainAllFunc = ${CHAINING_DIR}/${1}-${2}.all.chain.gz
-netAllFunc = ${CHAINING_DIR}/${1}-${2}.all.net.gz
-chainSynFunc = ${CHAINING_DIR}/${1}-${2}.syn.chain.gz
-netSynFunc = ${CHAINING_DIR}/${1}-${2}.syn.net.gz
+# call function to  to obtain path to chain/net files, given type,srcOrg,targetOrg.
+chainFunc = ${CHAINING_DIR}/${2}-${3}.${1}.chain.gz
+netFunc = ${CHAINING_DIR}/${2}-${3}.${1}.net.gz
+
+# call functions to obtain path to chain/net files, given srcOrg,targetOrg.
+chainAllFunc = $(call chainFunc,all,${1},${2})
+netAllFunc = $(call netFunc,all,${1},${2})
+chainSynFunc = $(call chainFunc,syn,${1},${2})
+netSynFunc = $(call netFunc,syn,${1},${2})
 
 ###
 # parasol

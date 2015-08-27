@@ -40,13 +40,13 @@ ${comparativeAnnotationDir}/DONE: checkout ${srcGp} ${transMapChainedAllPsls} ${
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
 		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${comparativeJobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log}" ;\
 	else \
 		${python} ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${comparativeJobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log} ;\
 	fi
@@ -94,5 +94,5 @@ ${comparativeAnnotationDir}/CONSENSUS_DONE: ${comparativeAnnotationDir}/AUG_ALIG
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} scripts/consensus.py --genomes ${augustusOrgs} \
 	--compAnnPath ${comparativeAnnotationDir} --statsDir ${augustusStatsDir} --outDir ${consensusDir} \
-	--attributePath ${srcAttrsTsv} --augGps ${augGps} --tmGps ${transMapEvalAllGp}
+	--attributePath ${srcGencodeAttrsTsv} --augGps ${augGps} --tmGps ${transMapEvalAllGp}
 	touch $@

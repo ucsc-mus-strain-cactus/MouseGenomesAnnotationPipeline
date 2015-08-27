@@ -33,7 +33,7 @@ class CmdOpts(object):
         argNames = ("hal", "queryGenome", "queryTwoBit", "targetGenome", "targetTwoBit", "chainFile", "netFile")
         optArgNames = ("synChainFile", "synNetFile")
         (opts, args) = parser.parse_args()
-        if not (len(argNames) <= len(args) <= len(argNames)+len(optArgNames)):
+        if not ((len(args) == len(argNames)) or (len(args) == len(argNames)+len(optArgNames))):
             parser.error("wrong number of arguments")
         # convert large number of positionals to files.
         for name in optArgNames:  # initialize optional
