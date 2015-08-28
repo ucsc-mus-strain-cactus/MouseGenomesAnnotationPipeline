@@ -8,20 +8,38 @@ defaultMemory = 8589934592
 maxJobDuration = 36000
 
 ifneq (${gencodeSubset},)
-comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
-transMapChainedAllPsls = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.psl}
-transMapEvalAllGp = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeSubset}.gp}
+ifneq (${transMapChainingMethod},)
+comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}/${transMapChainingMethod}
+transMapChainedAllPsls = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/${transMapChainingMethod}/transMap${gencodeSubset}.psl}
+transMapEvalAllGp = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/${transMapChainingMethod}/transMap${gencodeSubset}.gp}
 srcGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
-jobTreeDir = $(shell pwd)/.${gencodeSubset}_${MSCA_VERSION}_comparativeAnnotatorJobTree
-log = $(shell pwd)/${gencodeSubset}_${MSCA_VERSION}_jobTree.log
+jobTreeDir = $(shell pwd)/.${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_comparativeAnnotatorJobTree
+log = $(shell pwd)/${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_jobTree.log
 METRICS_DIR = ${comparativeAnnotationDir}/metrics
+endif
 endif
 
 
-all: checkout annotation
+# call function to obtain a assembly file given an organism and extension
+asmFileFunc = ${ASM_GENOMES_DIR}/$(1).$(2)
 
-checkout:
-	cd ../comparativeAnnotator && git checkout master
+# call functions to get particular assembly files given an organism
+asmFastaFunc = $(call asmFileFunc,${1},fa)
+asmTwoBitFunc = $(call asmFileFunc,${1},2bit)
+asmChromSizesFunc = $(call asmFileFunc,${1},chrom.sizes)
+
+targetFastaFiles = ${mappedOrgs:%=$(call asmFastaFunc,%)}
+targetTwoBitFiles = ${mappedOrgs:%=$(call asmTwoBitFunc,%)}
+targetChromSizes = ${mappedOrgs:%=$(call asmChromSizesFunc,%)}
+queryFasta = $(call asmFastaFunc,${srcOrg})
+queryTwoBit = $(call asmTwoBitFunc,${srcOrg})
+queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
+
+all: transMapChainingMethod
+
+transMapChainingMethod: ${transMapChainingMethods:%=%.transMapChainingMethod}
+%.transMapChainingMethod:
+	${MAKE} -f rules/comparativeAnnotator.mk annotation transMapChainingMethod=$*
 
 annotation: ${gencodeSubsets:%=%.annotation}
 
@@ -36,7 +54,7 @@ ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapE
 	rm -rf ${jobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
 		cwd="$(shell pwd)" ;\
-		ssh ${parasolHost} -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
+		ssh ku -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
 		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
