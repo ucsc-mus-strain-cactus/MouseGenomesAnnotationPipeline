@@ -47,7 +47,8 @@ ${transMapDataDir}/transMap%.psl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl ${SRC_GE
 	@mkdir -p $(dir $@)
 	pslMap -mapInfo=${transMapDataDir}/transMap$*.mapinfo -chainMapFile ${SRC_GENCODE_DATA_DIR}/wgEncode$*.psl ${mappingChains} /dev/stdout \
 		| sort -k 14,14 -k 16,16n \
-		| pslRecalcMatch /dev/stdin ${targetTwoBit} ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa $@.${tmpExt}
+		| pslRecalcMatch /dev/stdin ${targetTwoBit} ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa stdout \
+		| bin/pslQueryUniq >$@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 endif
 

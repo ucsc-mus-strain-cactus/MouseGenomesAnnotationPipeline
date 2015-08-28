@@ -21,7 +21,7 @@ allOrgs = ${srcOrg} ${mappedOrgs}
 
 # this is function to generate the orgDb name from an org, use it with:
 #    $(call orgToOrgDbFunc,${yourOrg})
-orgToOrgDbFunc = Mus${0}_${MSCA_VERSION}
+orgToOrgDbFunc = Mus${1}_${MSCA_VERSION}
 
 # HAL file with simple and browser database names (e.g. Mus_XXX_1411)
 halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
