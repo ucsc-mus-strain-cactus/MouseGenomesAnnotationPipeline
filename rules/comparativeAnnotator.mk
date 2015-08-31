@@ -29,11 +29,8 @@ asmTwoBitFunc = $(call asmFileFunc,${1},2bit)
 asmChromSizesFunc = $(call asmFileFunc,${1},chrom.sizes)
 
 targetFastaFiles = ${mappedOrgs:%=$(call asmFastaFunc,%)}
-targetTwoBitFiles = ${mappedOrgs:%=$(call asmTwoBitFunc,%)}
 targetChromSizes = ${mappedOrgs:%=$(call asmChromSizesFunc,%)}
 queryFasta = $(call asmFastaFunc,${srcOrg})
-queryTwoBit = $(call asmTwoBitFunc,${srcOrg})
-queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 
 all: transMapChainingMethod
 

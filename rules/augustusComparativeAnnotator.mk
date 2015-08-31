@@ -7,6 +7,18 @@ maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 36000
 
+# call function to obtain a assembly file given an organism and extension
+asmFileFunc = ${ASM_GENOMES_DIR}/$(1).$(2)
+
+# call functions to get particular assembly files given an organism
+asmFastaFunc = $(call asmFileFunc,${1},fa)
+asmTwoBitFunc = $(call asmFileFunc,${1},2bit)
+asmChromSizesFunc = $(call asmFileFunc,${1},chrom.sizes)
+
+targetFastaFiles = ${mappedOrgs:%=$(call asmFastaFunc,%)}
+targetChromSizes = ${mappedOrgs:%=$(call asmChromSizesFunc,%)}
+queryFasta = $(call asmFastaFunc,${srcOrg})
+
 comparativeAnnotationDir = ${ANNOTATION_DIR}_Augustus
 transMapChainedAllPsls = ${augustusOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeComp}.psl}
 transMapEvalAllGp = ${augustusOrgs:%=${TRANS_MAP_DIR}/transMap/%/transMap${gencodeComp}.gp}
@@ -40,13 +52,13 @@ ${comparativeAnnotationDir}/DONE: checkout ${compGp} ${transMapChainedAllPsls} $
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
 		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${compGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		--annotationGp ${compGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${comparativeJobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log}" ;\
 	else \
 		${python} ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${compGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcAttrsTsv} \
+		--annotationGp ${compGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${comparativeJobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log} ;\
 	fi
