@@ -37,8 +37,9 @@ augustusStatsDir = ${comparativeAnnotationDir}/augustus_stats
 augustusBeds = ${augustusOrgs:%=${augustusStatsDir}/%.bed}
 augustusFastas = ${augustusOrgs:%=${augustusStatsDir}/%.fa}
 augustusFaidx = ${augustusOrgs:%=${augustusStatsDir}/%.fa.fai}
+METRICS_DIR = ${comparativeAnnotationDir}/metrics
 
-all: ${comparativeAnnotationDir}/DONE consensus
+all: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE consensus
 
 ${comparativeAnnotationDir}/DONE: ${compGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
@@ -59,6 +60,14 @@ ${comparativeAnnotationDir}/DONE: ${compGp} ${transMapChainedAllPsls} ${transMap
 		--defaultMemory ${defaultMemory} --jobTree ${comparativeJobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log} ;\
 	fi
+	touch $@
+
+${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
+	@mkdir -p $(dir $@)
+	cd ../comparativeAnnotator ;\
+	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
+	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
+	--annotationGp ${srcGp} --gencode ${gencodeComp}
 	touch $@
 
 consensus: prepareTranscripts alignTranscripts makeConsensus
