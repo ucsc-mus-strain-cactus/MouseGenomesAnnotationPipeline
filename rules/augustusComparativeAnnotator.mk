@@ -38,10 +38,7 @@ augustusBeds = ${augustusOrgs:%=${augustusStatsDir}/%.bed}
 augustusFastas = ${augustusOrgs:%=${augustusStatsDir}/%.fa}
 augustusFaidx = ${augustusOrgs:%=${augustusStatsDir}/%.fa.fai}
 
-all: checkout ${comparativeAnnotationDir}/DONE consensus
-
-checkout:
-	cd ../comparativeAnnotator && git checkout augustus
+all: ${comparativeAnnotationDir}/DONE consensus
 
 ${comparativeAnnotationDir}/DONE: checkout ${compGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
@@ -50,13 +47,13 @@ ${comparativeAnnotationDir}/DONE: checkout ${compGp} ${transMapChainedAllPsls} $
 		cwd="$(shell pwd)" ;\
 		ssh ku -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
 		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
-		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
+		${python} src/annotationPipelineWithAugustus.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
 		--annotationGp ${compGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${comparativeJobTreeDir} --maxJobDuration ${maxJobDuration} \
 		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} --augustusGps ${augustusGps} &> ${log}" ;\
 	else \
-		${python} ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
+		${python} ../comparativeAnnotator/src/annotationPipelineWithAugustus.py --refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} \
 		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
 		--annotationGp ${compGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
 		--defaultMemory ${defaultMemory} --jobTree ${comparativeJobTreeDir} --maxJobDuration ${maxJobDuration} \
@@ -106,5 +103,6 @@ ${comparativeAnnotationDir}/CONSENSUS_DONE: ${comparativeAnnotationDir}/AUG_ALIG
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} scripts/consensus.py --genomes ${augustusOrgs} \
 	--compAnnPath ${comparativeAnnotationDir} --statsDir ${augustusStatsDir} --outDir ${consensusDir} \
-	--attributePath ${srcAttrsTsv} --augGps ${augGps} --tmGps ${transMapEvalAllGp} --compGp ${compGp} --basicGp ${basicGp}
+	--attributePath ${srcGencodeAttrsTsv} --augGps ${augGps} --tmGps ${transMapEvalAllGp} --compGp ${compGp} \
+	--basicGp ${basicGp}
 	touch $@

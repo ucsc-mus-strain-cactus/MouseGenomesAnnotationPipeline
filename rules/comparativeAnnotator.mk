@@ -71,8 +71,8 @@ ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator ;\
 	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
-	--comparativeAnnotationDir ${comparativeAnnotationDir} --header ${MSCA_VERSION} --attrs ${srcGencodeAttrsTsv} \
-	--annotationGp ${srcGp}
+	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
+	--annotationGp ${srcGp} --gencode ${gencodeSubset}
 	touch $@
 
 endif
