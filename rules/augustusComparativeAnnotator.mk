@@ -40,7 +40,7 @@ augustusFaidx = ${augustusOrgs:%=${augustusStatsDir}/%.fa.fai}
 
 all: ${comparativeAnnotationDir}/DONE consensus
 
-${comparativeAnnotationDir}/DONE: checkout ${compGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
+${comparativeAnnotationDir}/DONE: ${compGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
 	rm -rf ${comparativeJobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
@@ -80,7 +80,7 @@ ${augustusStatsDir}/%.fa.fai: ${augustusStatsDir}/%.fa
 
 alignTranscripts: ${comparativeAnnotationDir}/AUG_ALIGNED
 
-${comparativeAnnotationDir}/AUG_ALIGNED: checkout ${augustusBeds} ${augustusFastas} ${augustusFaidx}
+${comparativeAnnotationDir}/AUG_ALIGNED: ${augustusBeds} ${augustusFastas} ${augustusFaidx}
 	@mkdir -p $(dir $@)
 	rm -rf ${alignJobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
