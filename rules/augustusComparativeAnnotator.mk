@@ -15,8 +15,8 @@ asmFastaFunc = $(call asmFileFunc,${1},fa)
 asmTwoBitFunc = $(call asmFileFunc,${1},2bit)
 asmChromSizesFunc = $(call asmFileFunc,${1},chrom.sizes)
 
-targetFastaFiles = ${mappedOrgs:%=$(call asmFastaFunc,%)}
-targetChromSizes = ${mappedOrgs:%=$(call asmChromSizesFunc,%)}
+targetFastaFiles = ${augustusOrgs:%=$(call asmFastaFunc,%)}
+targetChromSizes = ${augustusOrgs:%=$(call asmChromSizesFunc,%)}
 queryFasta = $(call asmFastaFunc,${srcOrg})
 
 comparativeAnnotationDir = ${ANNOTATION_DIR}_Augustus
@@ -65,9 +65,9 @@ ${comparativeAnnotationDir}/DONE: ${compGp} ${transMapChainedAllPsls} ${transMap
 ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator ;\
-	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
+	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${augustusOrgs} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
-	--annotationGp ${srcGp} --gencode ${gencodeComp}
+	--annotationGp ${compGp} --gencode ${gencodeComp}
 	touch $@
 
 consensus: prepareTranscripts alignTranscripts makeConsensus
