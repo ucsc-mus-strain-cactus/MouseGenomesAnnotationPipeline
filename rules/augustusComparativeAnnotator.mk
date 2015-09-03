@@ -38,8 +38,10 @@ augustusBeds = ${augustusOrgs:%=${augustusStatsDir}/%.bed}
 augustusFastas = ${augustusOrgs:%=${augustusStatsDir}/%.fa}
 augustusFaidx = ${augustusOrgs:%=${augustusStatsDir}/%.fa.fai}
 METRICS_DIR = ${comparativeAnnotationDir}/metrics
+clustLog = $(shell pwd)/${gencodeComp}_${MSCA_VERSION}_clustering.log
+clusteringJobTree = $(shell pwd)/.${gencodeComp}_${MSCA_VERSION}_clusteringJobTree
 
-all: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE consensus
+all: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE ${METRICS_DIR}/CLUSTERING_DONE consensus
 
 ${comparativeAnnotationDir}/DONE: ${compGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
@@ -70,6 +72,25 @@ ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 	--annotationGp ${compGp} --gencode ${gencodeComp}
 	touch $@
 
+${METRICS_DIR}/CLUSTERING_DONE: ${comparativeAnnotationDir}/DONE
+	@mkdir -p $(dir $@)
+	rm -rf ${clusteringJobTree}
+	cd ../comparativeAnnotator ;\
+	if [ "${batchSystem}" = "parasol" ]; then \
+		cwd="$(shell pwd)" ;\
+		ssh ku -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
+		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
+		${python} scripts/clustering.py --outDir ${METRICS_DIR} --genomes ${augustusOrgs} \
+		--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} --batchSystem parasol \
+		--annotationGp ${compGp} --gencode ${gencodeComp} --jobTree ${clusteringJobTree} --maxCpus ${maxCpus} &> ${clustLog}" ;\
+	else \
+		cd ../comparativeAnnotator && ${python} scripts/clustering.py --outDir ${METRICS_DIR} --genomes ${augustusOrgs} \
+		--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} --batchSystem singleMachine \
+		--annotationGp ${compGp} --gencode ${gencodeComp} --jobTree ${clusteringJobTree} --maxThreads ${maxThreads} &> ${clustLog} ;\
+	fi
+	touch $@
+	
+
 consensus: prepareTranscripts alignTranscripts makeConsensus
 
 prepareTranscripts: ${augustusBeds} ${augustusFastas} ${augustusFaidx}
@@ -87,9 +108,9 @@ ${augustusStatsDir}/%.fa: ${augustusStatsDir}/%.bed
 ${augustusStatsDir}/%.fa.fai: ${augustusStatsDir}/%.fa
 	samtools faidx $<
 
-alignTranscripts: ${comparativeAnnotationDir}/AUG_ALIGNED
+alignTranscripts: ${augustusStatsDir}/DONE
 
-${comparativeAnnotationDir}/AUG_ALIGNED: ${augustusBeds} ${augustusFastas} ${augustusFaidx}
+${augustusStatsDir}/DONE: ${augustusBeds} ${augustusFastas} ${augustusFaidx}
 	@mkdir -p $(dir $@)
 	rm -rf ${alignJobTreeDir}
 	if [ "${batchSystem}" = "parasol" ]; then \
@@ -106,9 +127,9 @@ ${comparativeAnnotationDir}/AUG_ALIGNED: ${augustusBeds} ${augustusFastas} ${aug
 	fi
 	touch $@
 
-makeConsensus: ${comparativeAnnotationDir}/CONSENSUS_DONE
+makeConsensus: ${consensusDir}/DONE
 
-${comparativeAnnotationDir}/CONSENSUS_DONE: ${comparativeAnnotationDir}/AUG_ALIGNED
+${consensusDir}/DONE: ${augustusStatsDir}/DONE
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} scripts/consensus.py --genomes ${augustusOrgs} \
 	--compAnnPath ${comparativeAnnotationDir} --statsDir ${augustusStatsDir} --outDir ${consensusDir} \

@@ -2,7 +2,7 @@ include defs.mk
 
 # jobTree configuration
 batchSystem = parasol
-maxThreads = 30
+maxThreads = 20
 maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 36000
@@ -16,6 +16,8 @@ srcGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
 jobTreeDir = $(shell pwd)/.${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_comparativeAnnotatorJobTree
 log = $(shell pwd)/${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_jobTree.log
 METRICS_DIR = ${comparativeAnnotationDir}/metrics
+clustLog = $(shell pwd)/${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_clustering.log
+clusteringJobTree = $(shell pwd)/.${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_clusteringJobTree
 endif
 endif
 
@@ -44,7 +46,7 @@ annotation: ${gencodeSubsets:%=%.annotation}
 	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
 
 ifneq (${gencodeSubset},)
-annotationGencodeSubset: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE
+annotationGencodeSubset: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE ${METRICS_DIR}/CLUSTERING_DONE
 
 ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp}
 	@mkdir -p $(dir $@)
@@ -74,5 +76,14 @@ ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
 	--annotationGp ${srcGp} --gencode ${gencodeSubset}
 	touch $@
+
+${METRICS_DIR}/CLUSTERING_DONE: ${comparativeAnnotationDir}/DONE
+	@mkdir -p $(dir $@)
+	rm -rf ${clusteringJobTree}
+	cd ../comparativeAnnotator ;\
+	${python} scripts/clustering.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
+	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
+	--annotationGp ${srcGp} --gencode ${gencodeSubset} --jobTree ${clusteringJobTree} --maxThreads ${maxThreads} &> ${clustLog}
+	touch $@	
 
 endif
