@@ -130,7 +130,7 @@ export SHELLOPTS := pipefail
 PYTHON_BIN = /hive/groups/recon/local/bin
 
 python = ${PYTHON_BIN}/python
-export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${PATH}
+export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${HAL_BIN_DIR}:${PATH}
 export PYTHONPATH := ./:${PYTHONPATH}
 
 ifneq (${HOSTNAME},hgwdev)
