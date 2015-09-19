@@ -31,7 +31,7 @@ ${srcGencodeDataDir}/%.bed: ${srcGencodeDataDir}/%.gp
 
 ${SRC_GENCODE_DATA_DIR}/%.fa:
 	@mkdir -p $(dir $@)
-	getRnaPred ${srcOrgHgDb} $* all $@.${tmpExt}
+	getRnaPred ${srcOrgHgDb} $* all stdout | faFilter -uniq stdin $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 # sillyness to make multiple productions work in make.
