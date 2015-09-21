@@ -1,15 +1,18 @@
 .PHONY: test
 
-all: chaining transMap comparativeAnnotator
+all: genomeFiles chaining transMap comparativeAnnotator
+
+genomeFiles:
+	${MAKE} -f rules/genomeFiles.mk
+
+chaining: genomeFiles
+	${MAKE} -f rules/chaining.mk
+
+gencode: genomeFiles
+	${MAKE} -f rules/gencode.mk
 
 transMap: chaining gencode
 	${MAKE} -f rules/transMap.mk
-
-chaining:
-	${MAKE} -f rules/chaining.mk
-
-gencode:
-	${MAKE} -f rules/gencode.mk
 
 comparativeAnnotator: transMap
 	${MAKE} -f rules/comparativeAnnotator.mk
