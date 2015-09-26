@@ -46,11 +46,11 @@ all: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE ${METRICS_DIR}/CLUSTER
 ${comparativeAnnotationDir}/DONE: ${compGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
 	rm -rf ${comparativeJobTreeDir}
-	cd ../comparativeAnnotator && ${python} src/annotationPipelineWithAugustus.py ${jobTreeOpts}  \
+	cd ../comparativeAnnotator && ${python} src/annotationPipelineWithAugustus.py ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} --augustusGps ${augustusGps} \
 	--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-	--annotationGp ${compGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
-	--jobTree ${comparativeJobTreeDir}  --outDir ${comparativeAnnotationDir} &> ${log}
+	--annotationGp ${compGp} --gencodeAttributeMap ${srcGencodeAttrsTsv} --jobTree ${comparativeJobTreeDir} \
+	--outDir ${comparativeAnnotationDir} &> ${log}
 	touch $@
 
 ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
