@@ -5,7 +5,7 @@ batchSystem = parasol
 maxThreads = 20
 maxCpus = 1024
 defaultMemory = 8589934592
-maxJobDuration = 36000
+maxJobDuration = 28800
 
 ifneq (${gencodeSubset},)
 ifneq (${transMapChainingMethod},)
@@ -83,7 +83,8 @@ ${METRICS_DIR}/CLUSTERING_DONE: ${comparativeAnnotationDir}/DONE
 	cd ../comparativeAnnotator ;\
 	${python} scripts/clustering.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
-	--annotationGp ${srcGp} --gencode ${gencodeSubset} --jobTree ${clusteringJobTree} --maxThreads ${maxThreads} &> ${clustLog}
+	--annotationGp ${srcGp} --gencode ${gencodeSubset} --jobTree ${clusteringJobTree} \
+	--batchSystem=parasol --parasolCommand=$(shell pwd)/bin/remparasol &> ${clustLog}
 	touch $@	
 
 endif

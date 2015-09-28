@@ -1,4 +1,4 @@
-include ../pipeline/config.mk
+include config.mk
 
 # base directory definitions
 MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
@@ -8,6 +8,7 @@ HAL_BIN_DIR = ${MSCA_PROJ_DIR}/src/progressiveCactus/submodules/hal/bin
 PYCBIO_DIR = ${MSCA_PROJ_DIR}/src/pycbio
 
 TRANS_MAP_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/transMap/${TRANS_MAP_VERSION}
+TMR_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/augustus/tmr
 SRC_GENCODE_DATA_DIR = ${TRANS_MAP_DIR}/data
 ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 CHAIN_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chains
