@@ -45,7 +45,7 @@ all: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE ${METRICS_DIR}/CLUSTER
 
 ${comparativeAnnotationDir}/DONE: ${compGp} ${transMapChainedAllPsls} ${transMapEvalAllGp} ${augustusGps}
 	@mkdir -p $(dir $@)
-	rm -rf ${comparativeJobTreeDir}
+	if [ -d ${comparativeJobTreeDir} ]; then rm -rf ${comparativeJobTreeDir}; fi
 	cd ../comparativeAnnotator && ${python} src/annotationPipelineWithAugustus.py ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genomes ${augustusOrgs} --sizes ${targetChromSizes} --augustusGps ${augustusGps} \
 	--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
@@ -62,7 +62,7 @@ ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
 
 ${METRICS_DIR}/CLUSTERING_DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
-	rm -rf ${clusteringJobTree}
+	if [ -d ${clusteringJobTree} ]; then rm -rf ${clusteringJobTree}; fi
 	cd ../comparativeAnnotator && ${python} scripts/clustering.py ${jobTreeOpts} \
 	--outDir ${METRICS_DIR} --comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
 	--annotationGp ${compGp} --gencode ${gencodeComp} --genomes ${augustusOrgs} --jobTree ${clusteringJobTree} &> ${clustLog}
@@ -90,7 +90,7 @@ alignTranscripts: ${augustusStatsDir}/DONE
 
 ${augustusStatsDir}/DONE: ${augustusBeds} ${augustusFastas} ${augustusFaidx}
 	@mkdir -p $(dir $@)
-	rm -rf ${alignJobTreeDir}
+	if [ -d ${alignJobTreeDir} ]; then rm -rf ${alignJobTreeDir}; fi
 	cd ../comparativeAnnotator && ${python} scripts/alignAugustus.py ${jobTreeOpts}  \
 	--jobTree ${alignJobTreeDir} --genomes ${augustusOrgs} --refFasta ${srcFa} \
 	--outDir ${augustusStatsDir} --augustusStatsDir ${augustusStatsDir} &> ${alignLog}
@@ -101,6 +101,6 @@ ${consensusDir}/DONE: ${augustusStatsDir}/DONE
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} scripts/consensus.py --genomes ${augustusOrgs} \
 	--compAnnPath ${comparativeAnnotationDir} --statsDir ${augustusStatsDir} --outDir ${consensusDir} \
-	--attributePath ${srcGencodeAttrsTsv} --augGps ${augGps} --tmGps ${transMapEvalAllGp} --compGp ${compGp} \
+	--attributePath ${srcGencodeAttrsTsv} --augGps ${augustusGps} --tmGps ${transMapEvalAllGp} --compGp ${compGp} \
 	--basicGp ${basicGp}
 	touch $@

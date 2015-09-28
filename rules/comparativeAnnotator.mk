@@ -6,6 +6,8 @@ maxThreads = 20
 maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 28800
+jobTreeOpts = --defaultMemory=${defaultMemory} --stats --batchSystem=parasol --parasolCommand=$(shell pwd)/bin/remparasol --maxJobDuration ${maxJobDuration}
+
 
 ifneq (${gencodeSubset},)
 ifneq (${transMapChainingMethod},)
@@ -50,23 +52,12 @@ annotationGencodeSubset: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE ${
 
 ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp}
 	@mkdir -p $(dir $@)
-	rm -rf ${jobTreeDir}
-	if [ "${batchSystem}" = "parasol" ]; then \
-		cwd="$(shell pwd)" ;\
-		ssh ku -Tnx "cd $$cwd && cd ../comparativeAnnotator && export PYTHONPATH=./ && \
-		export PATH=./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
-		${python} src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
-		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
-		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
-		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log}" ;\
-	else \
-		${python} ../comparativeAnnotator/src/annotationPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
-		--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-		--annotationGp ${srcGp} --batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
-		--defaultMemory ${defaultMemory} --jobTree ${jobTreeDir} --maxJobDuration ${maxJobDuration} \
-		--maxThreads ${maxThreads} --stats --outDir ${comparativeAnnotationDir} &> ${log} ;\
-	fi
+	if [ -d ${jobTreeDir} ]; then rm -rf ${jobTreeDir}; fi
+	cd ../comparativeAnnotator && 
+	${python} src/annota{tionPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
+	--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
+	--annotationGp ${srcGp} -}-batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
+	--outDir ${comparativeAnnotationDir} &> ${log}
 	touch $@
 
 ${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
