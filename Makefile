@@ -1,3 +1,4 @@
+include defs.mk
 .PHONY: test
 
 all: chaining transMap comparativeAnnotator
