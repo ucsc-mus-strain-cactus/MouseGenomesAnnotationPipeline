@@ -15,6 +15,6 @@ def halGetGenomes(halfile):
     return halStats(["--genomes", halfile])[0].split(" ")
 
 def halGetChromSizes(halfile, genome):
-    "return list of genomes in file"
+    "return dict of chromosomes sizes "
     return dict(line.split("\t") for line in halStats(["--chromSizes", genome, halfile]))
 

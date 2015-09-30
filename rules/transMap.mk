@@ -46,6 +46,7 @@ mappingChains = $(call chainFunc,${transMapChainingMethod},${srcOrg},${mapTarget
 ${transMapDataDir}/transMap%.psl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa ${mappingChains} ${targetTwoBit}
 	@mkdir -p $(dir $@)
 	pslMap -mapInfo=${transMapDataDir}/transMap$*.mapinfo -chainMapFile ${SRC_GENCODE_DATA_DIR}/wgEncode$*.psl ${mappingChains} /dev/stdout \
+		| bin/postTransMapChain /dev/stdin /dev/stdout \
 		| sort -k 14,14 -k 16,16n \
 		| pslRecalcMatch /dev/stdin ${targetTwoBit} ${SRC_GENCODE_DATA_DIR}/wgEncode$*.fa stdout \
 		| bin/pslQueryUniq >$@.${tmpExt}

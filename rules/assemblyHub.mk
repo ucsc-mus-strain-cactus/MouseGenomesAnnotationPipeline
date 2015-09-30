@@ -8,7 +8,7 @@ defaultMemory = 8589934592
 maxJobDuration = 36000
 
 ifneq (${gencodeSubset},)
-comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}/syn
+comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}/all
 assemblyHubDir = ${comparativeAnnotationDir}/assemblyHub
 jobTreeDir = $(shell pwd)/.${gencodeSubset}_assemblyHub
 log = $(shell pwd)/${gencodeSubset}_assemblyHubJobTree.log

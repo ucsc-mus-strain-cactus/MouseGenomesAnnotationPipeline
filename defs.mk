@@ -1,4 +1,4 @@
-include ../pipeline_msca/config.mk
+include ../pipeline/config.mk
 
 # base directory definitions
 MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
@@ -62,7 +62,7 @@ srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
 ###
 
 # chaining methods used by transmap
-transMapChainingMethods = simpleChain all syn
+transMapChainingMethods = simpleChain all
 
 # call function to get transmap directory given org and chain method
 transMapDataDirFunc = ${TRANS_MAP_DIR}/transMap/${1}/${2}
