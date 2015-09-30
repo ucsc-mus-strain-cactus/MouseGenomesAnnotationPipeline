@@ -15,11 +15,15 @@ comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}/${transMapChaining
 transMapChainedAllPsls = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/${transMapChainingMethod}/transMap${gencodeSubset}.psl}
 transMapEvalAllGp = ${mappedOrgs:%=${TRANS_MAP_DIR}/transMap/%/${transMapChainingMethod}/transMap${gencodeSubset}.gp}
 srcGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
-jobTreeDir = $(shell pwd)/.${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_comparativeAnnotatorJobTree
-log = $(shell pwd)/${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_jobTree.log
-METRICS_DIR = ${comparativeAnnotationDir}/metrics
-clustLog = $(shell pwd)/${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_clustering.log
-clusteringJobTree = $(shell pwd)/.${gencodeSubset}_${MSCA_VERSION}_${transMapChainingMethod}_clusteringJobTree
+metricsDir = ${comparativeAnnotationDir}/metrics
+
+jobTreeCompAnnTmpDir = $(shell pwd)/${jobTreeRootTmpDir}/comparativeAnnotator/${gencodeSubset}_${transMapChainingMethod}
+jobTreeCompAnnJobOutput = ${jobTreeCompAnnTmpDir}/comparativeAnnotator.out
+jobTreeCompAnnJobDir = ${jobTreeCompAnnTmpDir}/jobTree
+
+jobTreeClusteringTmpDir = $(shell pwd)/${jobTreeRootTmpDir}/clustering/${gencodeSubset}_${transMapChainingMethod}
+jobTreeClusteringJobOutput = ${jobTreeClusteringTmpDir}/clustering.out
+jobTreeClusteringJobDir = ${jobTreeClusteringTmpDir}/jobTree
 endif
 endif
 
@@ -48,34 +52,35 @@ annotation: ${gencodeSubsets:%=%.annotation}
 	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
 
 ifneq (${gencodeSubset},)
-annotationGencodeSubset: ${comparativeAnnotationDir}/DONE ${METRICS_DIR}/DONE ${METRICS_DIR}/CLUSTERING_DONE
+annotationGencodeSubset: ${comparativeAnnotationDir}/DONE ${metricsDir}/DONE ${metricsDir}/CLUSTERING_DONE
 
 ${comparativeAnnotationDir}/DONE: ${srcGp} ${transMapChainedAllPsls} ${transMapEvalAllGp}
 	@mkdir -p $(dir $@)
-	if [ -d ${jobTreeDir} ]; then rm -rf ${jobTreeDir}; fi
-	cd ../comparativeAnnotator && 
-	${python} src/annota{tionPipeline.py --refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
+	@mkdir -p ${jobTreeCompAnnTmpDir}
+	if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
+	cd ../comparativeAnnotator && ${python} src/annotationPipeline.py ${jobTreeOpts} \
+	--refGenome ${srcOrg} --genomes ${mappedOrgs} --sizes ${targetChromSizes} \
 	--psls ${transMapChainedAllPsls} --gps ${transMapEvalAllGp} --fastas ${targetFastaFiles} --refFasta ${queryFasta} \
-	--annotationGp ${srcGp} -}-batchSystem ${batchSystem} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
-	--outDir ${comparativeAnnotationDir} &> ${log}
+	--annotationGp ${srcGp} --gencodeAttributeMap ${srcGencodeAttrsTsv} \
+	--outDir ${comparativeAnnotationDir} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
 	touch $@
 
-${METRICS_DIR}/DONE: ${comparativeAnnotationDir}/DONE
+${metricsDir}/DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
-	cd ../comparativeAnnotator ;\
-	${python} scripts/coverage_identity_ok_plots.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
+	cd ../comparativeAnnotator && ${python} scripts/coverage_identity_ok_plots.py \
+	--outDir ${metricsDir} --genomes ${mappedOrgs} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
 	--annotationGp ${srcGp} --gencode ${gencodeSubset}
 	touch $@
 
-${METRICS_DIR}/CLUSTERING_DONE: ${comparativeAnnotationDir}/DONE
+${metricsDir}/CLUSTERING_DONE: ${comparativeAnnotationDir}/DONE
 	@mkdir -p $(dir $@)
-	rm -rf ${clusteringJobTree}
-	cd ../comparativeAnnotator ;\
-	${python} scripts/clustering.py --outDir ${METRICS_DIR} --genomes ${mappedOrgs} \
+	@mkdir -p ${jobTreeClusteringTmpDir}
+	if [ -d ${jobTreeClusteringJobDir} ]; then rm -rf ${jobTreeClusteringJobDir}; fi
+	cd ../comparativeAnnotator && ${python} scripts/clustering.py ${jobTreeOpts} \
+	--outDir ${metricsDir} --genomes ${mappedOrgs} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --attributePath ${srcGencodeAttrsTsv} \
-	--annotationGp ${srcGp} --gencode ${gencodeSubset} --jobTree ${clusteringJobTree} \
-	--batchSystem=parasol --parasolCommand=$(shell pwd)/bin/remparasol &> ${clustLog}
+	--annotationGp ${srcGp} --gencode ${gencodeSubset} --jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}
 	touch $@	
 
 endif
