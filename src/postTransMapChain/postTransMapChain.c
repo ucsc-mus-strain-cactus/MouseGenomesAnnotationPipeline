@@ -237,25 +237,6 @@ static void addPslToChained(struct psl* chainedPsl,
     chainedPsl->nCount += nextPsl->nCount;
 }
 
-/* update count of numInsert and baseInsert */
-static void updateInsertCounts(struct psl* chainedPsl) {
-    chainedPsl->qNumInsert = chainedPsl->qBaseInsert = 0;
-    chainedPsl->tNumInsert = chainedPsl->tBaseInsert = 0;
-
-    for (int iBlk = 1; iBlk < chainedPsl->blockCount; iBlk++) {
-        unsigned qGapSize = chainedPsl->qStarts[iBlk] - (chainedPsl->qStarts[iBlk-1]+chainedPsl->blockSizes[iBlk-1]);
-        if (qGapSize != 0) {
-            chainedPsl->qNumInsert++;
-            chainedPsl->qBaseInsert += qGapSize;
-        }
-        unsigned tGapSize = chainedPsl->tStarts[iBlk] - (chainedPsl->tStarts[iBlk-1]+chainedPsl->blockSizes[iBlk-1]);
-        if (tGapSize != 0) {
-            chainedPsl->tNumInsert++;
-            chainedPsl->tBaseInsert += tGapSize;
-        }
-    }
-}
-
 /* pull off one or more psls from the list and chain them */
 static void chainToLongest(struct psl** queryPsls,
                            FILE* outPslFh) {
@@ -271,7 +252,7 @@ static void chainToLongest(struct psl** queryPsls,
             slAddHead(&unchainedPsls, nextPsl);
         }
     }
-    updateInsertCounts(chainedPsl);
+    pslComputeInsertCounts(chainedPsl);
     pslTabOut(chainedPsl, outPslFh);
     pslFree(&chainedPsl);
     slReverse(&unchainedPsls); // preserve longest to shortest order
@@ -309,7 +290,7 @@ int main(int argc, char **argv) {
     optionInit(&argc, argv, optionSpecs);
     if (optionExists("h") || optionExists("help"))
         errAbort("usage: %s", usageMsg);
-    if (argc > 3) {
+    if (argc != 3) {
         errAbort("wrong # of args: %s", usageMsg);
     }
     postTransMapChain(argv[1], argv[2]);

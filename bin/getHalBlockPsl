@@ -1,0 +1,71 @@
+#!/bin/env python
+""""
+Get the PSL between two assemblies.  This is what is used for chaining and see it can be useful
+for debugging chains.
+"""
+
+import sys,os
+sys.path.insert(0, "/hive/groups/recon/local/pycbio/lib")
+
+# use jobTree in comparativeAnnotator module for now
+myBinDir = os.path.abspath(os.path.normpath(os.path.dirname(sys.argv[0])))
+sys.path.insert(0, myBinDir+ "/../lib")
+from optparse import OptionParser
+from musstrain.hal import *
+from pycbio.sys import fileOps
+from pycbio.sys import procOps
+import subprocess # workaround procOps bug
+
+
+class CmdOpts(object):
+    usage="""%prog [options] hal queryGenome targetGenome blockPsl
+
+    Get the PSL between two assemblies.  This is what is used for chaining and see it can be useful
+    for debugging chains.
+"""
+    parser = OptionParser()
+    def __init__(self):
+        parser = OptionParser(usage=CmdOpts.usage)
+        (opts, args) = parser.parse_args()
+        if len(args) != 4:
+            parser.error("wrong number of arguments")
+        self.hal, self.queryGenome, self.targetGenome, self.blockPsl = args
+        self.__dict__.update(opts.__dict__)
+
+def makeChromBedTmp(hal, genome, chrom, chromSize):
+    "create a BED file in local tmp covering one chromosome"
+    bedFile = fileOps.tmpFileGet(chrom, "bed")
+    with open(bedFile, "w") as fh:
+        fileOps.prRowv(fh, chrom, 0, chromSize)
+    return bedFile
+
+def getHalBlockPslChrom(hal, queryGenome, queryChrom, queryChromSize, targetGenome):
+    "get PSL for one chrom"
+    queryBed = makeChromBedTmp(hal, queryGenome, queryChrom, queryChromSize)
+    #  --inMemory caused out of memory in with some alignments with 31G allocated
+    # FIXME: there is a bug in runProc that cause stdout to get truncated when called in a loop.
+    # OUCH, it happens with subprocess to, so hence create a tmp for each chrom and return
+    tmpPsl = fileOps.tmpFileGet("hal", "psl")
+    procOps.runProc([["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
+                     ["pslPosTarget", "/dev/stdin", tmpPsl]])
+    os.unlink(queryBed)
+    return tmpPsl
+    
+
+def getHalBlockPsl(hal, queryGenome, targetGenome):
+    queryChromSizes = halGetChromSizes(hal, queryGenome)
+    tmpPsls = []
+    for queryChrom in queryChromSizes.iterkeys():
+        tmpPsls.append(getHalBlockPslChrom(hal, queryGenome, queryChrom, queryChromSizes[queryChrom], targetGenome))
+    return tmpPsls
+        
+def main():
+    "begin here"
+    opts = CmdOpts()
+    tmpPsls = getHalBlockPsl(opts.hal, opts.queryGenome, opts.targetGenome)
+    with open(opts.blockPsl, "w") as blockPslFh:
+        procOps.runProc(["cat"] + tmpPsls, stdout=blockPslFh)
+    for tmpPsl in tmpPsls:
+        os.unlink(tmpPsl)
+        
+main()
