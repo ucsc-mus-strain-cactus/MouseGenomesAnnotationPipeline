@@ -22,7 +22,8 @@ maxThreads = 20
 maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 28800
-jobTreeOpts = --defaultMemory=${defaultMemory} --stats --batchSystem=parasol --parasolCommand=$(shell pwd)/bin/remparasol --maxJobDuration ${maxJobDuration}
+jobTreeOpts = --defaultMemory ${defaultMemory} --stats --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
+			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} --maxJobDuration ${maxJobDuration}
 
 # jobTree folders
 jobTreeAugustusTmpDir = $(shell pwd)/${jobTreeRootTmpDir}/comparativeAnnotator/${augustusGencodeSet}_${transMapChainingMethod}_Augustus
@@ -94,7 +95,7 @@ runAugustus: ${augustusOrgs:%=%.runOrg}
 ifneq (${mapTargetOrg},)
 runOrg: ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} ${outputGp} ${outputBed12_8} ${outputBb}
 
-${intronVector}:
+${intronVector}: ${classifyDb}
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} scripts/find_intron_vector.py --genome ${mapTargetOrg} \
 	--gp ${transMapGp} --comparativeAnnotationDir ${comparativeAnnotationDir} --outPath ${intronVector}.${tmpExt}
