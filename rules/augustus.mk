@@ -22,8 +22,10 @@ maxThreads = 20
 maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 28800
-jobTreeOpts = --defaultMemory ${defaultMemory} --stats --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
-			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} --maxJobDuration ${maxJobDuration}
+retryCount = 3
+jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
+			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
+			  --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats
 
 # jobTree folders
 jobTreeAugustusTmpDir = $(shell pwd)/${jobTreeRootTmpDir}/comparativeAnnotator/${augustusGencodeSet}_${transMapChainingMethod}_Augustus
@@ -33,8 +35,7 @@ jobTreeCompAnnJobDir = ${jobTreeAugustusTmpDir}/jobTree
 ##
 # Requirements
 ##
-comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}/${transMapChainingMethod}
-classifyDb = ${comparativeAnnotationDir}/classify.db
+comparativeAnnotationDone = ${ANNOTATION_DIR}/${augustusGencodeSet}/${transMapChainingMethod}/DONE
 
 ##
 # Files
@@ -95,7 +96,7 @@ runAugustus: ${augustusOrgs:%=%.runOrg}
 ifneq (${mapTargetOrg},)
 runOrg: ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} ${outputGp} ${outputBed12_8} ${outputBb}
 
-${intronVector}: ${classifyDb}
+${intronVector}: ${comparativeAnnotationDone}
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} scripts/find_intron_vector.py --genome ${mapTargetOrg} \
 	--gp ${transMapGp} --comparativeAnnotationDir ${comparativeAnnotationDir} --outPath ${intronVector}.${tmpExt}
@@ -115,13 +116,13 @@ ${inputGp}: ${sortedGp} ${intronVector}
 ${outputGtf}: ${inputGp}
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} augustus/run_augustus.py ${jobTreeOpts} \
-	--inputGp $< --outputGp $@.$}{tmpExt} --genome ${mapTargetOrg} --chromSizes ${genomeChromSizes} \
+	--inputGp $< --outputGtf $@.$}{tmpExt} --genome ${mapTargetOrg} --chromSizes ${genomeChromSizes} \
 	--fasta ${genomeFasta} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
 	mv -f $@.${tmpExt} $@
 
 ${outputGp}: ${outputGtf}
 	@mkdir -p $(dir $@)
-	tfToGenePred -genePredExt $< $@.${tmpExt}
+	gtfToGenePred -genePredExt $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${outputBed12_8}: ${outputGp}

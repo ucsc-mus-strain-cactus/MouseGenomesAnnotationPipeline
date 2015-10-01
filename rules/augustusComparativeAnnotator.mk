@@ -6,8 +6,10 @@ maxThreads = 30
 maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 36000
-jobTreeOpts = --defaultMemory ${defaultMemory} --stats --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
-			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} --maxJobDuration ${maxJobDuration}
+retryCount = 3
+jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
+			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
+			  --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats
 
 # call function to obtain a assembly file given an organism and extension
 asmFileFunc = ${ASM_GENOMES_DIR}/$(1).$(2)

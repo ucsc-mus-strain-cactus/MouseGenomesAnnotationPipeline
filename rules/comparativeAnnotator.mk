@@ -6,8 +6,10 @@ maxThreads = 20
 maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 28800
-jobTreeOpts = --defaultMemory ${defaultMemory} --stats --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
-			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} --maxJobDuration ${maxJobDuration}
+retryCount = 3
+jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
+			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
+			  --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats
 
 ifneq (${gencodeSubset},)
 ifneq (${transMapChainingMethod},)
