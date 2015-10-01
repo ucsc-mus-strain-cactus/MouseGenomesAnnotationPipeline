@@ -1,3 +1,4 @@
+#include ../pipeline_msca/config.mk
 include ../pipeline/config.mk
 
 # base directory definitions
@@ -62,7 +63,7 @@ srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
 ###
 
 # chaining methods used by transmap
-transMapChainingMethods = simpleChain all syn
+transMapChainingMethods = simpleChain all
 
 # call function to get transmap directory given org and chain method
 transMapDataDirFunc = ${TRANS_MAP_DIR}/transMap/${1}/${2}
@@ -95,8 +96,15 @@ queryTwoBit = $(call asmTwoBitFunc,${srcOrg})
 queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 
 
+##
+# AugustusTMR
+##
+augustusGencodeSet = ${gencodeComp}
+augustusChainingMethods = all #simpleChain
+
+
 # comparative anotations types produced
-compAnnTypes = alignmentErrors allProblems assemblyErrors comparativeAnnotation inFrameStop interestingBiology
+compAnnTypes = alignmentErrors allProblems assemblyErrors comparativeAnnotation interestingBiology
 
 ###
 # chaining
@@ -129,9 +137,10 @@ tmpExt = ${host}.${ppid}.tmp
 SHELL = /bin/bash -beEu
 export SHELLOPTS := pipefail
 PYTHON_BIN = /hive/groups/recon/local/bin
+AUGUSTUS_BIN_DIR = /cluster/home/mario/augustus/trunks/bin
 
 python = ${PYTHON_BIN}/python
-export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${HAL_BIN_DIR}:${PATH}
+export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${HAL_BIN_DIR}:${AUGUSTUS_BIN_DIR}:${PATH}
 export PYTHONPATH := ./:${PYTHONPATH}
 
 ifneq (${HOSTNAME},hgwdev)
