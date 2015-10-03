@@ -6,7 +6,7 @@ include defs.mk
 ###
 # src genes
 ###
-all: ${srcGencodeAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAllFa} ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
+all: ${srcGencodeAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAllFa} ${srcGencodeAllFaidx} ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
 
 # awk expression to edit chrom names in UCSC format.  Assumse all alts are version 1.
 # chr1_GL456211_random, chrUn_GL456239
@@ -33,6 +33,10 @@ ${SRC_GENCODE_DATA_DIR}/%.fa:
 	@mkdir -p $(dir $@)
 	getRnaPred ${srcOrgHgDb} $* all stdout | faFilter -uniq stdin $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
+
+${SRC_GENCODE_DATA_DIR}/%.fa.fai: ${SRC_GENCODE_DATA_DIR}/%.fa
+	@mkdir -p $(dir $@)
+	samtools faidx $<
 
 # sillyness to make multiple productions work in make.
 # touch ensures that CDS is newer than psl

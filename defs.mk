@@ -54,6 +54,7 @@ srcGencodeSubsets = ${srcGencodeBasic} ${srcGencodeComp} ${srcGencodePseudo}
 srcGencodeAttrsTsv = ${SRC_GENCODE_DATA_DIR}/${srcGencodeAttrs}.tsv
 srcGencodeAllGp = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.gp}
 srcGencodeAllFa = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.fa}
+srcGencodeAllFaidx = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.fa.fai}
 srcGencodeAllPsl = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.psl}
 srcGencodeAllCds = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.cds}
 srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
@@ -100,11 +101,11 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # AugustusTMR
 ##
 augustusGencodeSet = ${gencodeComp}
-augustusChainingMethods = all #simpleChain
+augustusChainingMethod = all
 
 
 # comparative anotations types produced
-compAnnTypes = alignmentErrors allProblems assemblyErrors comparativeAnnotation interestingBiology
+compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors transMapOk augustusOk
 
 ###
 # chaining
@@ -166,3 +167,13 @@ KENT_HG_LIB_DIR = ${KENT_DIR}/src/hg/lib
 # root directory for jobtree jobs.  Subdirectories should
 # be create for each task
 jobTreeRootTmpDir = jobTree.tmp/${MSCA_VERSION}
+# jobTree configuration
+batchSystem = parasol
+maxThreads = 20
+maxCpus = 1024
+defaultMemory = 8589934592
+maxJobDuration = 28800
+retryCount = 3
+jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
+			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
+			  --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats

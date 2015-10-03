@@ -13,29 +13,12 @@ AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr/${transMapChainingMethod}
 AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work/${transMapChainingMethod}
 
 ##
-# jobTree variables and rules
+# jobTree
 ##
 
-# jobTree configuration
-batchSystem = parasol
-maxThreads = 20
-maxCpus = 1024
-defaultMemory = 8589934592
-maxJobDuration = 28800
-retryCount = 3
-jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
-			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
-			  --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats
-
-# jobTree folders
-jobTreeAugustusTmpDir = $(shell pwd)/${jobTreeRootTmpDir}/comparativeAnnotator/${augustusGencodeSet}_${transMapChainingMethod}_Augustus
-jobTreeCompAnnJobOutput = ${jobTreeAugustusTmpDir}/comparativeAnnotator.out
-jobTreeCompAnnJobDir = ${jobTreeAugustusTmpDir}/jobTree
-
-##
-# Requirements
-##
-comparativeAnnotationDone = ${ANNOTATION_DIR}/${augustusGencodeSet}/${transMapChainingMethod}/DONE
+jobTreeAugustusTmpDir = $(shell pwd)/${jobTreeRootTmpDir}/augustus/${augustusGencodeSet}_${transMapChainingMethod}
+jobTreeAugustusJobOutput = ${jobTreeAugustusTmpDir}/augustus.out
+jobTreeAugustusJobDir = ${jobTreeAugustusTmpDir}/jobTree
 
 ##
 # Files
@@ -68,6 +51,13 @@ outputGpDir = ${AUGUSTUS_WORK_DIR}/output_gps
 outputGp = ${outputGpDir}/output_gps/${mapTargetOrg}.output.gp
 outputBed12_8 = ${outputGpDir}/bed_12_8/${mapTargetOrg}.bed12-8
 outputBb = ${outputGpDir}/bigBed/${mapTargetOrg}.bb
+
+##
+# Requirements
+##
+comparativeAnnotationDone = ${ANNOTATION_DIR}/${augustusGencodeSet}/${transMapChainingMethod}/compAnnFlags/${mapTargetOrg}.done
+
+
 endif
 
 endif
@@ -117,7 +107,7 @@ ${outputGtf}: ${inputGp}
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} augustus/run_augustus.py ${jobTreeOpts} \
 	--inputGp $< --outputGtf $@.$}{tmpExt} --genome ${mapTargetOrg} --chromSizes ${genomeChromSizes} \
-	--fasta ${genomeFasta} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
+	--fasta ${genomeFasta} --jobTree ${jobTreeAugustusJobDir} &> ${jobTreeAugustusJobOutput}
 	mv -f $@.${tmpExt} $@
 
 ${outputGp}: ${outputGtf}
