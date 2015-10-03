@@ -21,6 +21,3 @@ comparativeAnnotator: transMap
 test:
 	python scripts/parseSDP_test.py
 	python -m doctest -v scripts/*.py
-
-augustus:
-	${MAKE} -f rules/augustusComparativeAnnotator.mk
