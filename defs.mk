@@ -43,7 +43,7 @@ gencodeBasic = GencodeBasic${GENCODE_VERSION}
 gencodeComp = GencodeComp${GENCODE_VERSION}
 gencodePseudo = GencodePseudoGene${GENCODE_VERSION}
 gencodeAttrs = GencodeAttrs${GENCODE_VERSION}
-gencodeSubsets = ${gencodeBasic} ${gencodeComp} ${gencodePseudo}
+gencodeSubsets = ${gencodeComp} #${gencodeBasic} ${gencodePseudo}
 
 # GENCODE src annotations based on hgDb databases above
 srcGencodeBasic = wgEncode${gencodeBasic}
@@ -64,7 +64,7 @@ srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
 ###
 
 # chaining methods used by transmap
-transMapChainingMethods = simpleChain all
+transMapChainingMethods = all #simpleChain
 
 # call function to get transmap directory given org and chain method
 transMapDataDirFunc = ${TRANS_MAP_DIR}/transMap/${1}/${2}
@@ -74,7 +74,7 @@ transMapGencodeBasic = transMap${gencodeBasic}
 transMapGencodeComp = transMap${gencodeComp}
 transMapGencodePseudo = transMap${gencodePseudo}
 transMapGencodeAttrs = transMap${gencodeAttrs}
-transMapGencodeSubsets = ${transMapGencodeBasic} ${transMapGencodeComp} ${transMapGencodePseudo}
+transMapGencodeSubsets = ${transMapGencodeComp} ${transMapGencodeBasic} ${transMapGencodePseudo}
 
 ##
 # Sequence files
@@ -101,7 +101,6 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # AugustusTMR
 ##
 augustusGencodeSet = ${gencodeComp}
-augustusChainingMethod = all
 
 
 # comparative anotations types produced

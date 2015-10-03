@@ -1,7 +1,7 @@
 include defs.mk
 .PHONY: test
 
-all: genomeFiles chaining transMap comparativeAnnotator
+all: genomeFiles chaining transMap comparativeAnnotator metrics
 
 genomeFiles:
 	${MAKE} -f rules/genomeFiles.mk
@@ -17,6 +17,9 @@ transMap: chaining gencode
 
 comparativeAnnotator: transMap
 	${MAKE} -f rules/comparativeAnnotator.mk
+
+metrics: comparativeAnnotator
+	${MAKE} -f rules/metrics.mk
 
 test:
 	python scripts/parseSDP_test.py
