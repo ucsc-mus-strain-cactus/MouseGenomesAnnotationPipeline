@@ -21,6 +21,9 @@ comparativeAnnotator: transMap
 metrics: comparativeAnnotator
 	${MAKE} -f rules/metrics.mk
 
+assemblyHub: comparativeAnnotator
+	${MAKE} -f rules/assemblyHub.mk
+
 test:
 	python scripts/parseSDP_test.py
 	python -m doctest -v scripts/*.py

@@ -90,7 +90,11 @@ augustusFa = ${augustusFaDir}/${mapTargetOrg}.fa
 augustusFaidx = ${augustusFaDir}/${mapTargetOrg}.fa.fai
 
 consensusDir = ${comparativeAnnotationDir}/consensus
+binnedTranscriptPath = ${AUGUSTUS_WORK_DIR}/consensus/${mapTargetOrg}
 consensusDone = ${ANNOTATION_DIR}/${gencodeSubset}/${transMapChainingMethod}/consensus/${mapTargetOrg}.done
+
+compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
+basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
 
 endif
 endif
@@ -127,7 +131,7 @@ ifeq (${gencodeSubset},${augustusGencodeSet})
 ifeq (${transMapChainingMethod},${augustusChainingMethod})
 runOrg: ${comparativeAnnotationDone} ${codingTranscriptList} ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} \
 		${outputGp} ${outputBed12_8} ${outputBb} ${outputBbSym} ${outputBed} ${clusteringDone} ${augustusFa} \
-		${augustusFaidx} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} ${consensusFlag}
+		${augustusFaidx} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} ${consensusDone}
 endif
 endif
 
@@ -233,11 +237,13 @@ ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
 	--jobTree ${jobTreeAlignAugustusJobDir} &> ${jobTreeAlignAugustusJobOutput}
 	touch $@
 
-${consensusFlag}: ${compAnnFlags} ${augAlnFlags} ${augCompAnnFlags} ${augGps}
+${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} ${augGps}
 	@mkdir -p $(dir $@)
+	@mkdir -p $(dir ${binnedTranscriptPath})
 	cd ../comparativeAnnotator && ${python} augustus/consensus.py --genome ${mapTargetOrg} \
 	--compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} --attributePath ${srcGencodeAttrsTsv} \
-	--augGp ${outputGp} --tmGp ${targetGp} --compGp ${compGp} --basicGp ${basicGp}
+	--augGp ${outputGp} --tmGp ${targetGp} --compGp ${compGp} --basicGp ${basicGp} \
+	--binnedTranscriptPath ${binnedTranscriptPath}
 	touch $@
 
 endif
