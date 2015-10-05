@@ -121,6 +121,7 @@ ifneq (${transMapChainingMethod},)
 ifneq (${gencodeSubset},)
 ifneq (${mapTargetOrg},)
 
+runOrg: ${comparativeAnnotationDone}
 
 ifeq (${gencodeSubset},${augustusGencodeSet})
 ifeq (${transMapChainingMethod},${augustusChainingMethod})
@@ -130,11 +131,6 @@ runOrg: ${comparativeAnnotationDone} ${codingTranscriptList} ${intronVector} ${s
 endif
 endif
 
-ifneq (${gencodeSubset},${augustusGencodeSet})
-ifneq (${transMapChainingMethod},${augustusChainingMethod})
-runOrg: ${comparativeAnnotationDone} ${consensusFlag}
-endif
-endif
 
 ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFasta} ${targetSizes}
 	mkdir -p $(dir $@)

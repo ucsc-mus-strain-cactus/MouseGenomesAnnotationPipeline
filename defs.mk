@@ -43,7 +43,7 @@ gencodeBasic = GencodeBasic${GENCODE_VERSION}
 gencodeComp = GencodeComp${GENCODE_VERSION}
 gencodePseudo = GencodePseudoGene${GENCODE_VERSION}
 gencodeAttrs = GencodeAttrs${GENCODE_VERSION}
-gencodeSubsets = ${gencodeBasic} ${gencodeComp} ${gencodePseudo}
+gencodeSubsets = ${gencodeComp} #${gencodeBasic} ${gencodePseudo}
 
 # GENCODE src annotations based on hgDb databases above
 srcGencodeBasic = wgEncode${gencodeBasic}
@@ -73,7 +73,7 @@ transMapGencodeBasic = transMap${gencodeBasic}
 transMapGencodeComp = transMap${gencodeComp}
 transMapGencodePseudo = transMap${gencodePseudo}
 transMapGencodeAttrs = transMap${gencodeAttrs}
-transMapGencodeSubsets = ${transMapGencodeComp} ${transMapGencodeBasic} ${transMapGencodePseudo}
+transMapGencodeSubsets = ${transMapGencodeComp} #${transMapGencodeBasic} ${transMapGencodePseudo}
 
 
 ##
