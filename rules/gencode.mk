@@ -6,7 +6,8 @@ include defs.mk
 ###
 # src genes
 ###
-all: ${srcGencodeAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAllFa} ${srcGencodeAllFaidx} ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
+all: ${srcGencodeAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAllFa} ${srcGencodeAllFaidx} \
+	 ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
 
 # awk expression to edit chrom names in UCSC format.  Assumse all alts are version 1.
 # chr1_GL456211_random, chrUn_GL456239

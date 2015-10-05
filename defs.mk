@@ -43,7 +43,7 @@ gencodeBasic = GencodeBasic${GENCODE_VERSION}
 gencodeComp = GencodeComp${GENCODE_VERSION}
 gencodePseudo = GencodePseudoGene${GENCODE_VERSION}
 gencodeAttrs = GencodeAttrs${GENCODE_VERSION}
-gencodeSubsets = ${gencodeComp} #${gencodeBasic} ${gencodePseudo}
+gencodeSubsets = ${gencodeBasic} ${gencodeComp} ${gencodePseudo}
 
 # GENCODE src annotations based on hgDb databases above
 srcGencodeBasic = wgEncode${gencodeBasic}
@@ -54,7 +54,6 @@ srcGencodeSubsets = ${srcGencodeBasic} ${srcGencodeComp} ${srcGencodePseudo}
 srcGencodeAttrsTsv = ${SRC_GENCODE_DATA_DIR}/${srcGencodeAttrs}.tsv
 srcGencodeAllGp = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.gp}
 srcGencodeAllFa = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.fa}
-srcGencodeAllFaidx = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.fa.fai}
 srcGencodeAllPsl = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.psl}
 srcGencodeAllCds = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.cds}
 srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
@@ -64,7 +63,7 @@ srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
 ###
 
 # chaining methods used by transmap
-transMapChainingMethods = all #simpleChain
+transMapChainingMethods = all
 
 # call function to get transmap directory given org and chain method
 transMapDataDirFunc = ${TRANS_MAP_DIR}/transMap/${1}/${2}
@@ -75,6 +74,7 @@ transMapGencodeComp = transMap${gencodeComp}
 transMapGencodePseudo = transMap${gencodePseudo}
 transMapGencodeAttrs = transMap${gencodeAttrs}
 transMapGencodeSubsets = ${transMapGencodeComp} ${transMapGencodeBasic} ${transMapGencodePseudo}
+
 
 ##
 # Sequence files
@@ -101,10 +101,12 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # AugustusTMR
 ##
 augustusGencodeSet = ${gencodeComp}
+augustusChainingMethods = all #simpleChain
 
 
 # comparative anotations types produced
-compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors transMapOk augustusOk
+compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors \
+		 transMapOk augustusOk AugustusTMR
 
 ###
 # chaining
@@ -166,6 +168,7 @@ KENT_HG_LIB_DIR = ${KENT_DIR}/src/hg/lib
 # root directory for jobtree jobs.  Subdirectories should
 # be create for each task
 jobTreeRootTmpDir = jobTree.tmp/${MSCA_VERSION}
+
 # jobTree configuration
 batchSystem = parasol
 maxThreads = 20
@@ -174,5 +177,5 @@ defaultMemory = 8589934592
 maxJobDuration = 28800
 retryCount = 3
 jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
-			  --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
-			  --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats
+                         --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
+                         --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats
