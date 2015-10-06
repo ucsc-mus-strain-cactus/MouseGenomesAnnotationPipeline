@@ -48,7 +48,7 @@ AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr/${transMapChainingMethod}
 AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work/${transMapChainingMethod}
 
 # jobTree (for running Augustus)
-jobTreeAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustus/${gencodeSubset}_${transMapChainingMethod}
+jobTreeAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustus/${mapTargetOrg}/${gencodeSubset}_${transMapChainingMethod}
 jobTreeAugustusJobOutput = ${jobTreeAugustusTmpDir}/augustus.out
 jobTreeAugustusJobDir = ${jobTreeAugustusTmpDir}/jobTree
 # Augustus does not need a completion flag because there is a single file output at the end (a genePred)
