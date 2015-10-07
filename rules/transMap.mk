@@ -26,14 +26,17 @@ transMapPsl = ${transMapGencodeSubsets:%=${transMapDataDir}/%.psl}
 transMapGp = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gp}
 
 # chain files
-mappingChains = ${CHAINING_DIR}/${srcOrg}-${mapTargetOrg}.chain.gz
+mappingChains = ${CHAINING_DIR}/${srcOrg}-${mapTargetOrg}.all.chain.gz
 
 
-transMap: ${transMapPsl} ${transMapGp}
+transMap: test ${transMapPsl} ${transMapGp}
 
 ###
 # genomic chain mapping
 ###
+
+test:
+	@echo ${mappingChains}
 
 # map and update match stats, which likes target sort for speed
 ${transMapDataDir}/transMap%.psl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa ${mappingChains} ${targetTwoBit}

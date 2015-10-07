@@ -178,7 +178,8 @@ ${outputGp}: ${outputGtf}
 
 ${outputBed12_8}: ${outputGp}
 	@mkdir -p $(dir $@)
-	cd ../comparativeAnnotator && cat $< | augustus/gp2othergp.pl | sort -k1,1 -k2,2n > $@.${tmpExt}
+	# sort -k1,1 -k2,2n did not work for CAST because of case-sensitive sorting
+	cd ../comparativeAnnotator && cat $< | augustus/gp2othergp.pl | bedSort /dev/stdin $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${outputBb}: ${outputBed12_8}
