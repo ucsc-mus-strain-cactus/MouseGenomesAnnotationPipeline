@@ -3,36 +3,26 @@
 #####
 include defs.mk
 
-
-ifneq (${transMapChainingMethod},)
 ifneq (${gencodeSubset},)
 
-transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}/${transMapChainingMethod}
+transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
 compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
 basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
 refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 
 metricsDir = ${comparativeAnnotationDir}/metrics
-metricsFlag = ${ANNOTATION_DIR}/${gencodeSubset}/${transMapChainingMethod}/metrics.done
+metricsFlag = ${ANNOTATION_DIR}/${gencodeSubset}/metrics.done
 
-compAnnFlags = ${augustusOrgs:%=${ANNOTATION_DIR}/${gencodeSubset}/${transMapChainingMethod}/compAnnFlags/%.done}
-
-endif
+compAnnFlags = ${augustusOrgs:%=${ANNOTATION_DIR}/${gencodeSubset}/compAnnFlags/%.done}
 endif
 
-all: transMapChainingMethod
-
-transMapChainingMethod: ${transMapChainingMethods:%=%.transMapChainingMethod}
-%.transMapChainingMethod:
-	${MAKE} -f rules/comparativeAnnotator.mk gencode transMapChainingMethod=$*
-
+all: gencode
 
 gencode: ${gencodeSubsets:%=%.gencode}
 
 %.gencode:
-	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$* \
-	transMapChainingMethod=${transMapChainingMethod}
+	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$* 
 
 
 ifneq (${transMapChainingMethod},)

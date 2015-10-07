@@ -1,5 +1,5 @@
-#include ../pipeline_msca/config.mk
-include ../pipeline/config.mk
+include ../pipeline_msca/config.mk
+#include ../pipeline/config.mk
 
 # base directory definitions
 MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
@@ -62,12 +62,6 @@ srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
 # transmap
 ###
 
-# chaining methods used by transmap
-transMapChainingMethods = all
-
-# call function to get transmap directory given org and chain method
-transMapDataDirFunc = ${TRANS_MAP_DIR}/transMap/${1}/${2}
-
 # hgDb tables used in transMap/comparativeAnnotator
 transMapGencodeBasic = transMap${gencodeBasic}
 transMapGencodeComp = transMap${gencodeComp}
@@ -101,8 +95,6 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # AugustusTMR
 ##
 augustusGencodeSet = ${gencodeComp}
-augustusChainingMethods = all #simpleChain
-
 
 # comparative anotations types produced
 compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors \
@@ -112,16 +104,6 @@ compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiolo
 # chaining
 ###
 CHAINING_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chaining/${CHAINING_VERSION}
-
-# call function to  to obtain path to chain/net files, given type,srcOrg,targetOrg.
-chainFunc = ${CHAINING_DIR}/${2}-${3}.${1}.chain.gz
-netFunc = ${CHAINING_DIR}/${2}-${3}.${1}.net.gz
-
-# call functions to obtain path to chain/net files, given srcOrg,targetOrg.
-chainAllFunc = $(call chainFunc,all,${1},${2})
-netAllFunc = $(call netFunc,all,${1},${2})
-chainSynFunc = $(call chainFunc,syn,${1},${2})
-netSynFunc = $(call netFunc,syn,${1},${2})
 
 ###
 # parasol
@@ -172,10 +154,7 @@ jobTreeRootTmpDir = jobTree.tmp/${MSCA_VERSION}
 # jobTree configuration
 batchSystem = parasol
 maxThreads = 20
-maxCpus = 1024
 defaultMemory = 8589934592
 maxJobDuration = 28800
-retryCount = 3
 jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
-                         --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --maxCpus ${maxCpus} \
-                         --retryCount ${retryCount} --maxJobDuration ${maxJobDuration} --stats
+              --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --stats

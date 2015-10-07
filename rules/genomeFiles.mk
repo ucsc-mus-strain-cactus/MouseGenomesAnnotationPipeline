@@ -5,7 +5,6 @@ all: ${allOrgs:%=%.getfiles}
 %.getfiles:
 	${MAKE} -f rules/genomeFiles.mk file org=$*
 
-# recurisve call:
 ifneq (${org},)
 
 fasta = ${ASM_GENOMES_DIR}/${org}.fa

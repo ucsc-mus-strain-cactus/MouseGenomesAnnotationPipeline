@@ -3,31 +3,28 @@
 ####
 include defs.mk
 
-ifneq (${transMapChainingMethod},)
 ifneq (${gencodeSubset},)
 ifneq (${mapTargetOrg},)
 #######
-# these variables only exist on the third level of recursion, I.E. when we have a target organism,
-# a gencode subset and a transMap chaining method
-# These will run for every combination of transMapChainingMethod-GencodeSubset-mapTargetOrg
+# These will run for every combination of GencodeSubset-mapTargetOrg
 #######
 # jobTree (for transMap comparativeAnnotator)
-jobTreeCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/comparativeAnnotator/${mapTargetOrg}/${gencodeSubset}_${transMapChainingMethod}
+jobTreeCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/comparativeAnnotator/${mapTargetOrg}/${gencodeSubset}
 jobTreeCompAnnJobOutput = ${jobTreeCompAnnTmpDir}/comparativeAnnotator.out
 jobTreeCompAnnJobDir = ${jobTreeCompAnnTmpDir}/jobTree
 comparativeAnnotationDone = ${jobTreeCompAnnTmpDir}/comparativeAnnotation.done
 # jobTree (for clustering classifiers)
-jobTreeClusteringTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/clustering/${mapTargetOrg}/${gencodeSubset}_${transMapChainingMethod}
+jobTreeClusteringTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/clustering/${mapTargetOrg}/${gencodeSubset}
 jobTreeClusteringJobOutput = ${jobTreeClusteringTmpDir}/clustering.out
 jobTreeClusteringJobDir = ${jobTreeClusteringTmpDir}/jobTree
 clusteringDone = ${jobTreeClusteringTmpDir}/classifierClustering.done
 
 # output location
-comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}/${transMapChainingMethod}
-metricsDir = ${ANNOTATION_DIR}/${gencodeSubset}/${transMapChainingMethod}/metrics
+comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
+metricsDir = ${ANNOTATION_DIR}/${gencodeSubset}/metrics
 
 # input files
-transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}/${transMapChainingMethod}
+transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
 refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 psl = ${transMapDataDir}/transMap${gencodeSubset}.psl
@@ -37,30 +34,29 @@ targetSizes = ${ASM_GENOMES_DIR}/${mapTargetOrg}.chrom.sizes
 
 #######
 # below is the Augustus parameters for when we run Augustus
-# we only run Augustus on one combination of transMapChainingMethod-GencodeSubset to avoid massive computation
+# we only run Augustus on GencodeComp to avoid duplicate computation
 #######
 ifeq (${gencodeSubset},${augustusGencodeSet})
-ifeq (${transMapChainingMethod},${augustusChainingMethod})
 
 # Directories
 AUGUSTUS_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/augustus
-AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr/${transMapChainingMethod}
-AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work/${transMapChainingMethod}
+AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr
+AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
 
 # jobTree (for running Augustus)
-jobTreeAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustus/${mapTargetOrg}/${gencodeSubset}_${transMapChainingMethod}
+jobTreeAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustus/${mapTargetOrg}/${gencodeSubset}
 jobTreeAugustusJobOutput = ${jobTreeAugustusTmpDir}/augustus.out
 jobTreeAugustusJobDir = ${jobTreeAugustusTmpDir}/jobTree
 # Augustus does not need a completion flag because there is a single file output at the end (a genePred)
 
 # jobTree (for comparative Annotator)
-jobTreeAugustusCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusComparativeAnnotator/${mapTargetOrg}/${gencodeSubset}_${transMapChainingMethod}
+jobTreeAugustusCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusComparativeAnnotator/${mapTargetOrg}/${gencodeSubset}
 jobTreeAugustusCompAnnJobOutput = ${jobTreeAugustusCompAnnTmpDir}/comparativeAnnotator.out
 jobTreeAugustusCompAnnJobDir = ${jobTreeAugustusCompAnnTmpDir}/jobTree
 augustusComparativeAnnotationDone = ${jobTreeAugustusCompAnnTmpDir}/augustusComparativeAnnotation.done
 
 # jobTree (for aligning transcripts)
-jobTreeAlignAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusAlignToReference/${mapTargetOrg}/${gencodeSubset}_${transMapChainingMethod}
+jobTreeAlignAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusAlignToReference/${mapTargetOrg}/${gencodeSubset}
 jobTreeAlignAugustusJobOutput = ${jobTreeAlignAugustusTmpDir}/alignAugustus.out
 jobTreeAlignAugustusJobDir = ${jobTreeAlignAugustusTmpDir}/jobTree
 augustusAlignmentDone =  ${jobTreeAlignAugustusTmpDir}/augustusAlignment.done
@@ -91,7 +87,7 @@ augustusFaidx = ${augustusFaDir}/${mapTargetOrg}.fa.fai
 
 consensusDir = ${comparativeAnnotationDir}/consensus
 binnedTranscriptPath = ${AUGUSTUS_WORK_DIR}/consensus/${mapTargetOrg}
-consensusDone = ${ANNOTATION_DIR}/${gencodeSubset}/${transMapChainingMethod}/consensus/${mapTargetOrg}.done
+consensusDone = ${ANNOTATION_DIR}/${gencodeSubset}/consensus/${mapTargetOrg}.done
 
 compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
 basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
@@ -99,45 +95,35 @@ basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
 endif
 endif
 endif
-endif
-endif
 
 
-all: transMapChainingMethod
-
-transMapChainingMethod: ${transMapChainingMethods:%=%.transMapChainingMethod}
-%.transMapChainingMethod:
-	${MAKE} -f rules/comparativeAnnotator.mk gencode transMapChainingMethod=$*
+all: gencode
 
 gencode: ${gencodeSubsets:%=%.gencode}
 
 %.gencode:
-	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$* \
-	transMapChainingMethod=${transMapChainingMethod}
+	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
 
 annotationGencodeSubset: ${augustusOrgs:%=%.annotationGencodeSubset}
 
 %.annotationGencodeSubset:
-	${MAKE} -f rules/comparativeAnnotator.mk runOrg mapTargetOrg=$* gencodeSubset=${gencodeSubset} \
-	transMapChainingMethod=${transMapChainingMethod}
+	${MAKE} -f rules/comparativeAnnotator.mk runOrg mapTargetOrg=$* gencodeSubset=${gencodeSubset}
 
-ifneq (${transMapChainingMethod},)
 ifneq (${gencodeSubset},)
 ifneq (${mapTargetOrg},)
 
 runOrg: ${comparativeAnnotationDone}
 
 ifeq (${gencodeSubset},${augustusGencodeSet})
-ifeq (${transMapChainingMethod},${augustusChainingMethod})
 runOrg: ${comparativeAnnotationDone} ${codingTranscriptList} ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} \
 		${outputGp} ${outputBed12_8} ${outputBb} ${outputBbSym} ${outputBed} ${clusteringDone} ${augustusFa} \
 		${augustusFaidx} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} ${consensusDone}
 endif
-endif
 
 
 ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFasta} ${targetSizes}
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
+	@mkdir -p ${comparativeAnnotationDir}
 	if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
 	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --gp ${targetGp} \
@@ -246,6 +232,5 @@ ${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDo
 	--binnedTranscriptPath ${binnedTranscriptPath}
 	touch $@
 
-endif
 endif
 endif

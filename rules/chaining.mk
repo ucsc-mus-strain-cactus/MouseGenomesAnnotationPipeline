@@ -15,27 +15,25 @@ ifneq (${queryOrg},)
 jobTreeChainTmpDir = ${jobTreeRootTmpDir}/chaining/${queryOrg}_${targetOrg}
 jobTreeJobOutput = ${jobTreeChainTmpDir}/chaining.out
 jobTreeJobDir = ${jobTreeChainTmpDir}/jobTree
-# maybe bigger than needed when -inMemory is removed
-#defaultMemory = 33285996544
-defaultMemory = 16106127360
-jobTreeOpts = --defaultMemory=${defaultMemory} --stats --batchSystem=parasol --parasolCommand=bin/remparasol --jobTree=${jobTreeJobDir}
+
+jobTreeChainingOpts = ${jobTreeOpts} --jobTree=${jobTreeJobDir}
 
 queryTwoBit = ${ASM_GENOMES_DIR}/${queryOrg}.2bit
 targetTwoBit = ${ASM_GENOMES_DIR}/${targetOrg}.2bit
 
-chainAll = $(call chainAllFunc,${queryOrg},${targetOrg})
-netAll = $(call netAllFunc,${queryOrg},${targetOrg})
-chainSyn = $(call chainSynFunc,${queryOrg},${targetOrg})
-netSyn = $(call netSynFunc,${queryOrg},${targetOrg})
+# call functions to obtain path to chain/net files, given srcOrg,targetOrg.
+chainAllFunc = $(call chainFunc,all,${1},${2})
+netAllFunc = $(call netFunc,all,${1},${2})
+chainSynFunc = $(call chainFunc,syn,${1},${2})
+netSynFunc = $(call netFunc,syn,${1},${2})
 
-# chainSyn is used as a flag because it's defined to be the last one created.
-# Can't mix shell atomic file create with jobTree restarts, as the output file
-# name changes.
+chainAll = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.all.chain.gz
+netAll = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.all.net.gz
 
-chain:  ${chainSyn}
-${chainSyn}: ${halFile} ${queryTwoBit} ${targetTwoBit}
+chain:  ${chainAll}
+${chainAll}: ${halFile} ${queryTwoBit} ${targetTwoBit}
 	@mkdir -p $(dir ${chainAll}) ${jobTreeChainTmpDir}
-	 ./bin/ucscChainNet ${jobTreeOpts} ${halFile} ${queryOrg} ${queryTwoBit} ${targetOrg} ${targetTwoBit} \
-	        ${chainAll} ${netAll} ${chainSyn} ${netSyn} >${jobTreeJobOutput} 2>&1
+	 ./bin/ucscChainNet ${jobTreeChainingOpts} ${halFile} ${queryOrg} ${queryTwoBit} ${targetOrg} \
+	        ${targetTwoBit} ${chainAll} ${netAll} > ${jobTreeJobOutput} 2>&1
 
 endif
