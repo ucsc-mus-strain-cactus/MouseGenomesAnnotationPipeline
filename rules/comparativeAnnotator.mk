@@ -21,7 +21,6 @@ clusteringDone = ${jobTreeClusteringTmpDir}/classifierClustering.done
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
-metricsDir = ${ANNOTATION_DIR}/${gencodeSubset}/metrics
 
 # input files
 transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
