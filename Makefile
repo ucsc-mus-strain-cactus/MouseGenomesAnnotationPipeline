@@ -3,7 +3,7 @@ include defs.mk
 
 all: genomeFiles chaining transMap comparativeAnnotator metrics
 
-augustus: genomeFiles chaining transMap comparativeAnnotator augustusComparativeAnnotator metrics
+augustus: genomeFiles chaining transMap comparativeAnnotator augustusComparativeAnnotator augustusMetrics
 
 genomeFiles:
 	${MAKE} -f rules/genomeFiles.mk
@@ -25,6 +25,9 @@ augustusComparativeAnnotator: comparativeAnnotator
 
 metrics: comparativeAnnotator
 	${MAKE} -f rules/metrics.mk
+
+augustusMetrics: augustusComparativeAnnotator
+	${MAKE} -f rules/augustusMetrics.mk
 
 test:
 	python scripts/parseSDP_test.py

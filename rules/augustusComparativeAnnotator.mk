@@ -3,12 +3,6 @@
 ####
 include defs.mk
 
-
-# Directories
-AUGUSTUS_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/augustus
-AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr
-AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
-
 codingTranscriptList = ${AUGUSTUS_WORK_DIR}/coding.lst
 
 all: ${codingTranscriptList} ${augustusOrgs:%=%.runOrg}
@@ -80,7 +74,7 @@ augustusFaidx = ${augustusFaDir}/${mapTargetOrg}.fa.fai
 
 consensusDir = ${comparativeAnnotationDir}/consensus
 binnedTranscriptPath = ${AUGUSTUS_WORK_DIR}/consensus/${mapTargetOrg}
-consensusDone = ${ANNOTATION_DIR}/${augustusGencodeSet}/consensus/${mapTargetOrg}.done
+consensusDone = ${ANNOTATION_DIR}/${augustusGencodeSet}/consensus/doneFlags/${mapTargetOrg}.done
 
 compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
 basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp

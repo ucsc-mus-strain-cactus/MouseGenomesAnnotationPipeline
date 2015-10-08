@@ -96,6 +96,10 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # at this point is only run on one gencode subset to avoid wasted computation
 ##
 augustusGencodeSet = ${gencodeComp}
+AUGUSTUS_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/augustus
+AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr
+AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
+
 
 # comparative anotations types produced
 compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors \
@@ -157,5 +161,5 @@ batchSystem = parasol
 maxThreads = 20
 defaultMemory = 8589934592
 maxJobDuration = 28800
-jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem parasol --parasolCommand $(shell pwd)/bin/remparasol \
+jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem ${batchSystem} --parasolCommand $(shell pwd)/bin/remparasol \
               --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --stats

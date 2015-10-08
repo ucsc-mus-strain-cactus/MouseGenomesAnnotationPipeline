@@ -1,5 +1,5 @@
 #####
-# final metrics. these are defined only when mapTargetOrg is not set and are used once all annotations are done
+# Final metric plots.
 #####
 include defs.mk
 
@@ -13,7 +13,7 @@ refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 metricsDir = ${comparativeAnnotationDir}/metrics
-metricsFlag = ${ANNOTATION_DIR}/${gencodeSubset}/metrics.done
+metricsFlag = ${metricsDir}/metrics.done
 
 endif
 
