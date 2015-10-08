@@ -93,6 +93,7 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 
 ##
 # AugustusTMR
+# at this point is only run on one gencode subset to avoid wasted computation
 ##
 augustusGencodeSet = ${gencodeComp}
 
