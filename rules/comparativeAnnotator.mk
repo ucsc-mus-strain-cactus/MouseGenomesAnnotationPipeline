@@ -18,6 +18,9 @@ annotationGencodeSubset: ${augustusOrgs:%=%.annotationGencodeSubset}
 ifneq (${gencodeSubset},)
 ifneq (${mapTargetOrg},)
 
+# comparativeAnnotator mode
+mode = transMap
+
 #######
 # These will run for every combination of GencodeSubset-mapTargetOrg
 #######
@@ -35,7 +38,6 @@ clusteringDone = ${jobTreeClusteringTmpDir}/classifierClustering.done
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
-
 # input files
 transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
@@ -51,7 +53,7 @@ ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFa
 	@mkdir -p $(dir $@)
 	@mkdir -p ${comparativeAnnotationDir}
 	if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
-	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${jobTreeOpts} \
+	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --gp ${targetGp} \
 	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
 	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}

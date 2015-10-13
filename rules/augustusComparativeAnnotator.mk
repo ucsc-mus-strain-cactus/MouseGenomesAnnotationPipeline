@@ -19,6 +19,9 @@ ${codingTranscriptList}:
 
 ifneq (${mapTargetOrg},)
 
+# comparativeAnnotator mode
+mode = augustus
+
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
 
@@ -59,7 +62,7 @@ intronVector = ${intronVectorDir}/${mapTargetOrg}_original_introns.txt
 sortedGp = ${inputDir}/${mapTargetOrg}.sorted.gp
 inputGp = ${inputDir}/${mapTargetOrg}.final.gp
 
-outputDir = ${AUGUSTUS_WORK_DIR}/output
+outputDir = ${AUGUSTUS_TMR_DIR}
 outputGtf = ${outputDir}/${mapTargetOrg}.output.gtf
 outputGp = ${outputDir}/${mapTargetOrg}.output.gp
 outputBed12_8 = ${outputDir}/bed_12_8/${mapTargetOrg}.bed12-8
@@ -124,7 +127,6 @@ ${outputGp}: ${outputGtf}
 
 ${outputBed12_8}: ${outputGp}
 	@mkdir -p $(dir $@)
-	# sort -k1,1 -k2,2n did not work for CAST because of case-sensitive sorting
 	cd ../comparativeAnnotator && cat $< | augustus/gp2othergp.pl | bedSort /dev/stdin $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
@@ -154,11 +156,11 @@ ${augustusFaidx}: ${augustusFa}
 ${augustusComparativeAnnotationDone}: ${outputGp}
 	@mkdir -p $(dir $@)
 	if [ -d ${jobTreeAugustusCompAnnJobDir} ]; then rm -rf ${jobTreeAugustusCompAnnJobDir}; fi
-	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${jobTreeOpts} \
+	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --gp ${targetGp} \
 	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
 	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeAugustusCompAnnJobDir} \
-	--augustus --augustusGp $< &> ${jobTreeAugustusCompAnnJobOutput}
+	--augustusGp $< &> ${jobTreeAugustusCompAnnJobOutput}
 	touch $@
 
 ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
