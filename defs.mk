@@ -15,6 +15,8 @@ ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 CHAIN_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chains
 ANNOTATION_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
 
+DONE_FLAG_DIR = ${MSCA_DATA_DIR}/completion_flags
+
 ###
 # genome and organisms.  The term `org' indicated the abbreviation for the organism,
 # the term `orgDb' refers to the browser database name, in the form Mus${org}_${MSCA_VERSION}
@@ -32,7 +34,6 @@ halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERS
 # LODs (based off the halBrowserFile)
 lodTxtFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_lod.txt
 lodDir = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_lods
-
 
 ###
 # GENCODE gene sets

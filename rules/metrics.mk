@@ -5,6 +5,9 @@ include defs.mk
 
 ifneq (${gencodeSubset},)
 
+# done flag dir
+doneFlagDir = ${DONE_FLAG_DIR}/${srcOrg}/${gencodeSubset}
+
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
 compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
 basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
@@ -13,7 +16,7 @@ refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 metricsDir = ${comparativeAnnotationDir}/metrics
-metricsFlag = ${metricsDir}/metrics.done
+metricsFlag = ${doneFlagDir}/metrics.done
 
 endif
 

@@ -21,6 +21,9 @@ ifneq (${mapTargetOrg},)
 # comparativeAnnotator mode
 mode = transMap
 
+# done flag dir
+doneFlagDir = ${DONE_FLAG_DIR}/${mapTargetOrg}/${gencodeSubset}
+
 #######
 # These will run for every combination of GencodeSubset-mapTargetOrg
 #######
@@ -28,13 +31,13 @@ mode = transMap
 jobTreeCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/comparativeAnnotator/${mapTargetOrg}/${gencodeSubset}
 jobTreeCompAnnJobOutput = ${jobTreeCompAnnTmpDir}/comparativeAnnotator.out
 jobTreeCompAnnJobDir = ${jobTreeCompAnnTmpDir}/jobTree
-comparativeAnnotationDone = ${jobTreeCompAnnTmpDir}/comparativeAnnotation.done
+comparativeAnnotationDone = ${doneFlagDir}/comparativeAnnotation.done
 
 # jobTree (for clustering classifiers)
 jobTreeClusteringTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/clustering/${mapTargetOrg}/${gencodeSubset}
 jobTreeClusteringJobOutput = ${jobTreeClusteringTmpDir}/clustering.out
 jobTreeClusteringJobDir = ${jobTreeClusteringTmpDir}/jobTree
-clusteringDone = ${jobTreeClusteringTmpDir}/classifierClustering.done
+clusteringDone = ${doneFlagDir}/classifierClustering.done
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}

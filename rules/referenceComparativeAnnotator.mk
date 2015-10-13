@@ -15,6 +15,9 @@ ifneq (${gencodeSubset},)
 # comparativeAnnotator mode
 mode = reference
 
+# done flag dir
+doneFlagDir = ${DONE_FLAG_DIR}/${srcOrg}/${gencodeSubset}
+
 #######
 # These will run for every GencodeSubset
 #######
@@ -22,13 +25,13 @@ mode = reference
 jobTreeCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/comparativeAnnotator/${srcOrg}/${gencodeSubset}
 jobTreeCompAnnJobOutput = ${jobTreeCompAnnTmpDir}/comparativeAnnotator.out
 jobTreeCompAnnJobDir = ${jobTreeCompAnnTmpDir}/jobTree
-comparativeAnnotationDone = ${jobTreeCompAnnTmpDir}/comparativeAnnotation.done
+comparativeAnnotationDone = ${doneFlagDir}/comparativeAnnotation.done
 
 # jobTree (for clustering classifiers)
 jobTreeClusteringTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/clustering/${srcOrg}$/${gencodeSubset}
 jobTreeClusteringJobOutput = ${jobTreeClusteringTmpDir}/clustering.out
 jobTreeClusteringJobDir = ${jobTreeClusteringTmpDir}/jobTree
-clusteringDone = ${jobTreeClusteringTmpDir}/classifierClustering.done
+clusteringDone = ${doneFlagDir}/classifierClustering.done
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}

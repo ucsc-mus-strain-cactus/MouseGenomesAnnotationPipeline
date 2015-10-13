@@ -3,6 +3,9 @@
 #####
 include defs.mk
 
+# done flag dir
+doneFlagDir = ${DONE_FLAG_DIR}/${srcOrg}/${gencodeSubset}
+
 # Files
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${augustusGencodeSet}.gp
 compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
@@ -13,7 +16,7 @@ refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
 consensusDir = ${comparativeAnnotationDir}/consensus
 metricsDir = ${consensusDir}/metrics
-metricsFlag = ${consensusDir}/doneFlags/metrics.done
+metricsFlag = ${doneFlagDir}/metrics.done
 binnedTranscriptDir = ${AUGUSTUS_WORK_DIR}/consensus
 
 all: ${metricsFlag}

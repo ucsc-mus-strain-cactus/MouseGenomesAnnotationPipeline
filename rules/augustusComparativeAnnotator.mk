@@ -22,6 +22,9 @@ ifneq (${mapTargetOrg},)
 # comparativeAnnotator mode
 mode = augustus
 
+# done flag dir
+doneFlagDir = ${DONE_FLAG_DIR}/${srcOrg}/${gencodeSubset}
+
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
 
@@ -44,13 +47,13 @@ jobTreeAugustusJobDir = ${jobTreeAugustusTmpDir}/jobTree
 jobTreeAugustusCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusComparativeAnnotator/${mapTargetOrg}/${augustusGencodeSet}
 jobTreeAugustusCompAnnJobOutput = ${jobTreeAugustusCompAnnTmpDir}/comparativeAnnotator.out
 jobTreeAugustusCompAnnJobDir = ${jobTreeAugustusCompAnnTmpDir}/jobTree
-augustusComparativeAnnotationDone = ${jobTreeAugustusCompAnnTmpDir}/augustusComparativeAnnotation.done
+augustusComparativeAnnotationDone = ${doneFlagDir}/augustusComparativeAnnotation.done
 
 # jobTree (for aligning transcripts)
 jobTreeAlignAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusAlignToReference/${mapTargetOrg}/${augustusGencodeSet}
 jobTreeAlignAugustusJobOutput = ${jobTreeAlignAugustusTmpDir}/alignAugustus.out
 jobTreeAlignAugustusJobDir = ${jobTreeAlignAugustusTmpDir}/jobTree
-augustusAlignmentDone =  ${jobTreeAlignAugustusTmpDir}/augustusAlignment.done
+augustusAlignmentDone =  ${doneFlagDir}/augustusAlignment.done
 
 # Files
 refTranscriptFasta = ${SRC_GENCODE_DATA_DIR}/wgEncode${augustusGencodeSet}.fa
@@ -77,7 +80,7 @@ augustusFaidx = ${augustusFaDir}/${mapTargetOrg}.fa.fai
 
 consensusDir = ${comparativeAnnotationDir}/consensus
 binnedTranscriptPath = ${AUGUSTUS_WORK_DIR}/consensus/${mapTargetOrg}
-consensusDone = ${ANNOTATION_DIR}/${augustusGencodeSet}/consensus/doneFlags/${mapTargetOrg}.done
+consensusDone = ${doneFlagDir}/consensus.done
 
 compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
 basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
