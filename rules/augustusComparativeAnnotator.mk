@@ -79,7 +79,7 @@ augustusFa = ${augustusFaDir}/${mapTargetOrg}.fa
 augustusFaidx = ${augustusFaDir}/${mapTargetOrg}.fa.fai
 
 consensusDir = ${comparativeAnnotationDir}/consensus
-binnedTranscriptPath = ${AUGUSTUS_WORK_DIR}/consensus/${mapTargetOrg}
+consensusWorkDir = ${AUGUSTUS_WORK_DIR}/consensus
 consensusDone = ${doneFlagDir}/consensus.done
 
 compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
@@ -179,9 +179,8 @@ ${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDo
 	@mkdir -p $(dir $@)
 	@mkdir -p $(dir ${binnedTranscriptPath})
 	cd ../comparativeAnnotator && ${python} augustus/consensus.py --genome ${mapTargetOrg} \
-	--compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} --attributePath ${srcGencodeAttrsTsv} \
-	--augGp ${outputGp} --tmGp ${targetGp} --compGp ${compGp} --basicGp ${basicGp} \
-	--binnedTranscriptPath ${binnedTranscriptPath}
+	--refGenome ${srcOrg} --compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} \
+	--workDir ${} --augGp ${outputGp} --tmGp ${targetGp}
 	touch $@
 
 endif
