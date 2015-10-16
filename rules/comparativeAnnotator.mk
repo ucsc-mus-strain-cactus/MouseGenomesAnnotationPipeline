@@ -55,15 +55,17 @@ runOrg: ${comparativeAnnotationDone} ${clusteringDone}
 ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFasta} ${targetSizes}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${comparativeAnnotationDir}
+	@mkdir -p ${jobTreeCompAnnTmpDir}
 	if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
 	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
-	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --gp ${targetGp} \
+	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --targetGp ${targetGp} \
 	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
 	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
 	touch $@
 
 ${clusteringDone}: ${comparativeAnnotationDone}
 	@mkdir -p $(dir $@)
+	@mkdir -p ${jobTreeClusteringTmpDir}
 	if [ -d ${jobTreeClusteringJobDir} ]; then rm -rf ${jobTreeClusteringJobDir}; fi
 	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} \
 	--genome ${mapTargetOrg} --outDir ${metricsDir} --comparativeAnnotationDir ${comparativeAnnotationDir} \

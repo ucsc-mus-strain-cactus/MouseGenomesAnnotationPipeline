@@ -45,6 +45,7 @@ annotationGencodeSubset: ${comparativeAnnotationDone} ${clusteringDone}
 ${comparativeAnnotationDone}: ${refGp} ${refFasta} ${refSizes}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${comparativeAnnotationDir}
+	@mkdir -p ${jobTreeCompAnnTmpDir}
 	if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
 	cd ../comparativeAnnotator ${mode} && ${python} src/annotation_pipeline.py ${jobTreeOpts} \
 	--refGenome ${srcOrg} --annotationGp ${refGp} --refFasta ${refFasta} --sizes ${targetSizes} \
@@ -53,6 +54,7 @@ ${comparativeAnnotationDone}: ${refGp} ${refFasta} ${refSizes}
 
 ${clusteringDone}: ${comparativeAnnotationDone}
 	@mkdir -p $(dir $@)
+	@mkdir -p ${jobTreeClusteringTmpDir}
 	if [ -d ${jobTreeClusteringJobDir} ]; then rm -rf ${jobTreeClusteringJobDir}; fi
 	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} \
 	--genome ${srcOrg} --outDir ${metricsDir} --comparativeAnnotationDir ${comparativeAnnotationDir} \
