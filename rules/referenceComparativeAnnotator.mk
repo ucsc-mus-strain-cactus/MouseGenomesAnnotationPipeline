@@ -3,12 +3,12 @@
 ####
 include defs.mk
 
-all: reference
+all: gencode
 
 gencode: ${gencodeSubsets:%=%.gencode}
 
 %.gencode:
-    ${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
+	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
 
 ifneq (${gencodeSubset},)
 
@@ -43,21 +43,21 @@ refSizes = ${ASM_GENOMES_DIR}/${srcOrg}.chrom.sizes
 annotationGencodeSubset: ${comparativeAnnotationDone} ${clusteringDone}
 
 ${comparativeAnnotationDone}: ${refGp} ${refFasta} ${refSizes}
-    @mkdir -p $(dir $@)
-    @mkdir -p ${comparativeAnnotationDir}
-    if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
-    cd ../comparativeAnnotator ${mode} && ${python} src/annotation_pipeline.py ${jobTreeOpts} \
-    --refGenome ${srcOrg} --annotationGp ${refGp} --refFasta ${refFasta} --sizes ${targetSizes} \
-    --outDir ${comparativeAnnotationDir} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
-    touch $@
+	@mkdir -p $(dir $@)
+	@mkdir -p ${comparativeAnnotationDir}
+	if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
+	cd ../comparativeAnnotator ${mode} && ${python} src/annotation_pipeline.py ${jobTreeOpts} \
+	--refGenome ${srcOrg} --annotationGp ${refGp} --refFasta ${refFasta} --sizes ${targetSizes} \
+	--outDir ${comparativeAnnotationDir} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
+	touch $@
 
 ${clusteringDone}: ${comparativeAnnotationDone}
-    @mkdir -p $(dir $@)
-    if [ -d ${jobTreeClusteringJobDir} ]; then rm -rf ${jobTreeClusteringJobDir}; fi
-    cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} \
-    --genome ${srcOrg} --outDir ${metricsDir} --comparativeAnnotationDir ${comparativeAnnotationDir} \
-    --annotationGp ${refGp} --gencode ${gencodeSubset} --attributePath ${srcGencodeAttrsTsv} \
-    --jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}
-    touch $@
+	@mkdir -p $(dir $@)
+	if [ -d ${jobTreeClusteringJobDir} ]; then rm -rf ${jobTreeClusteringJobDir}; fi
+	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} \
+	--genome ${srcOrg} --outDir ${metricsDir} --comparativeAnnotationDir ${comparativeAnnotationDir} \
+	--annotationGp ${refGp} --gencode ${gencodeSubset} --attributePath ${srcGencodeAttrsTsv} \
+	--jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}
+	touch $@
 
 endif
