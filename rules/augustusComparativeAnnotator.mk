@@ -109,7 +109,6 @@ ${inputGp}: ${sortedGp} ${intronVector}
 ${outputGtf}: ${inputGp}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeAugustusTmpDir}
-	if [ -d ${jobTreeAugustusJobDir} ]; then rm -rf ${jobTreeAugustusJobDir}; fi
 	cd ../comparativeAnnotator && ${python} augustus/run_augustus.py ${jobTreeOpts} \
 	--inputGp $< --outputGtf $@ --genome ${mapTargetOrg} --chromSizes ${targetSizes} \
 	--fasta ${targetFasta} --jobTree ${jobTreeAugustusJobDir} &> ${jobTreeAugustusJobOutput}
@@ -150,7 +149,6 @@ ${augustusFaidx}: ${augustusFa}
 ${augustusComparativeAnnotationDone}: ${outputGp}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeAugustusCompAnnTmpDir}
-	if [ -d ${jobTreeAugustusCompAnnJobDir} ]; then rm -rf ${jobTreeAugustusCompAnnJobDir}; fi
 	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --targetGp ${targetGp} \
 	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
@@ -161,7 +159,6 @@ ${augustusComparativeAnnotationDone}: ${outputGp}
 ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeAlignAugustusTmpDir}
-	if [ -d ${jobTreeAlignAugustusJobDir} ]; then rm -rf ${jobTreeAlignAugustusJobDir}; fi
 	cd ../comparativeAnnotator && ${python} augustus/align_augustus.py ${jobTreeOpts} \
 	--genome ${mapTargetOrg} --refTranscriptFasta ${refTranscriptFasta} --targetTranscriptFasta ${augustusFa} \
 	--targetTranscriptFastaIndex ${augustusFaidx} --outDir ${comparativeAnnotationDir} \

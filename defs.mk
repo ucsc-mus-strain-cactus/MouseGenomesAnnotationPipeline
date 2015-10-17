@@ -15,7 +15,7 @@ ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
 CHAIN_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chains
 ANNOTATION_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
 
-DONE_FLAG_DIR = ${MSCA_DATA_DIR}/completion_flags
+DONE_FLAG_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/completion_flags
 
 ###
 # genome and organisms.  The term `org' indicated the abbreviation for the organism,

@@ -41,6 +41,8 @@ clusteringDone = ${doneFlagDir}/classifierClustering.done
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
+metricsDir = ${comparativeAnnotationDir}/metrics
+
 # input files
 transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
@@ -56,7 +58,6 @@ ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFa
 	@mkdir -p $(dir $@)
 	@mkdir -p ${comparativeAnnotationDir}
 	@mkdir -p ${jobTreeCompAnnTmpDir}
-	if [ -d ${jobTreeCompAnnJobDir} ]; then rm -rf ${jobTreeCompAnnJobDir}; fi
 	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --targetGp ${targetGp} \
 	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
@@ -66,10 +67,9 @@ ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFa
 ${clusteringDone}: ${comparativeAnnotationDone}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeClusteringTmpDir}
-	if [ -d ${jobTreeClusteringJobDir} ]; then rm -rf ${jobTreeClusteringJobDir}; fi
 	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} \
-	--genome ${mapTargetOrg} --outDir ${metricsDir} --comparativeAnnotationDir ${comparativeAnnotationDir} \
-	--annotationGp ${refGp} --gencode ${gencodeSubset} --attributePath ${srcGencodeAttrsTsv} \
+	--genome ${mapTargetOrg} --refGenome ${srcOrg} --outDir ${metricsDir} \
+	--comparativeAnnotationDir ${comparativeAnnotationDir} --gencode ${gencodeSubset} \
 	--jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}
 	touch $@
 
