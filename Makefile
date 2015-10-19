@@ -3,7 +3,8 @@ include defs.mk
 
 all: genomeFiles chaining transMap referenceComparativeAnnotator comparativeAnnotator metrics
 
-augustus: genomeFiles chaining transMap referenceComparativeAnnotator comparativeAnnotator augustusComparativeAnnotator augustusMetrics
+augustus: genomeFiles chaining transMap referenceComparativeAnnotator comparativeAnnotator \
+	augustusComparativeAnnotator augustusMetrics
 
 genomeFiles:
 	${MAKE} -f rules/genomeFiles.mk

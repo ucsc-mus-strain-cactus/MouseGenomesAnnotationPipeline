@@ -23,7 +23,7 @@ ifneq (${mapTargetOrg},)
 mode = augustus
 
 # done flag dir
-doneFlagDir = ${DONE_FLAG_DIR}/${srcOrg}/${gencodeSubset}
+doneFlagDir = ${DONE_FLAG_DIR}/${mapTargetOrg}/${augustusGencodeSet}
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
@@ -167,10 +167,10 @@ ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
 
 ${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} ${augGps}
 	@mkdir -p $(dir $@)
-	@mkdir -p $(dir ${binnedTranscriptPath})
+	@mkdir -p $(dir ${consensusDir})
 	cd ../comparativeAnnotator && ${python} augustus/consensus.py --genome ${mapTargetOrg} \
 	--refGenome ${srcOrg} --compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} \
-	--workDir ${} --augGp ${outputGp} --tmGp ${targetGp}
+	--workDir ${consensusWorkDir} --augGp ${outputGp} --tmGp ${targetGp}
 	touch $@
 
 endif

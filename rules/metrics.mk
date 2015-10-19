@@ -35,9 +35,9 @@ annotationGencodeSubset: ${metricsFlag}
 
 ${metricsFlag}:
 	@mkdir -p $(dir $@)
-	cd ../comparativeAnnotator && ${python} plotting/coverage_identity_ok_plots.py --outDir ${metricsDir} \
-	--genomes ${augustusOrgs} --comparativeAnnotationDir ${comparativeAnnotationDir} \
-	--attributePath ${srcGencodeAttrsTsv} --annotationGp ${refGp} --gencode ${gencodeSubset}
+	cd ../comparativeAnnotator && ${python} plotting/transmap_analysis.py --outDir ${metricsDir} \
+	--genomes ${augustusOrgs} --refGenome ${srcOrg} --gencode ${gencodeSubset} \
+	--comparativeAnnotationDir ${comparativeAnnotationDir}
 	touch $@
 
 endif
