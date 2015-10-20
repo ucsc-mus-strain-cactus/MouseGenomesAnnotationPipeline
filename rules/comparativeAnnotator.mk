@@ -5,15 +5,25 @@ include defs.mk
 
 all: gencode
 
+clean: ${gencodeSubsets:%=%.gencode.clean}
+
 gencode: ${gencodeSubsets:%=%.gencode}
 
 %.gencode:
+	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubsetClean gencodeSubset=$*
+
+%.gencode.clean:
 	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
 
 annotationGencodeSubset: ${augustusOrgs:%=%.annotationGencodeSubset}
 
+annotationGencodeSubsetClean: ${augustusOrgs:%=%.annotationGencodeSubsetClean}
+
 %.annotationGencodeSubset:
 	${MAKE} -f rules/comparativeAnnotator.mk runOrg mapTargetOrg=$* gencodeSubset=${gencodeSubset}
+
+%.annotationGencodeSubsetClean:
+	${MAKE} -f rules/comparativeAnnotator.mk cleanOrg mapTargetOrg=$* gencodeSubset=${gencodeSubset}
 
 ifneq (${gencodeSubset},)
 ifneq (${mapTargetOrg},)
@@ -73,6 +83,9 @@ ${clusteringDone}: ${comparativeAnnotationDone}
 	--jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}
 	touch $@
 
+
+cleanOrg:
+	rm -rf ${jobTreeCompAnnJobDir} ${comparativeAnnotationDone} ${jobTreeClusteringJobDir} ${clusteringDone}
 
 endif
 endif

@@ -9,6 +9,10 @@ include defs.mk
 all: ${srcGencodeAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAllFa} ${srcGencodeAllFaidx} \
 	 ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
 
+clean:
+	rm -rf ${srcGencodeAttrsTsv} ${SRC_GENCODE_DATA_DIR}/*.gp ${srcGencodeDataDir}/*.bed ${SRC_GENCODE_DATA_DIR}/*.fa* \
+	${SRC_GENCODE_DATA_DIR}/*.cds ${SRC_GENCODE_DATA_DIR}/*.psl ${queryFasta} ${queryTwoBit} ${queryChromSizes}
+
 # awk expression to edit chrom names in UCSC format.  Assumse all alts are version 1.
 # chr1_GL456211_random, chrUn_GL456239
 # FIXME: this is also build_browser/bin/ucscToEnsemblChrom

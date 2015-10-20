@@ -2,8 +2,13 @@ include defs.mk
 
 all: ${allOrgs:%=%.getfiles}
 
+clean: ${allOrgs:%=%.cleanfiles}
+
 %.getfiles:
 	${MAKE} -f rules/genomeFiles.mk file org=$*
+
+%.cleanfiles:
+	${MAKE} -f rules/genomeFiles.mk cleanfiles org=$*
 
 ifneq (${org},)
 
@@ -27,5 +32,8 @@ ${size}: ${twoBit}
 	@mkdir -p $(dir $@)
 	twoBitInfo $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
+
+cleanfiles:
+	rm -rf ${fasta} ${twoBit} ${size}
 
 endif

@@ -5,10 +5,15 @@ include defs.mk
 
 all: gencode
 
+clean: ${gencodeSubsets:%=%.gencode.clean}
+
 gencode: ${gencodeSubsets:%=%.gencode}
 
 %.gencode:
 	${MAKE} -f rules/referenceComparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
+
+%.gencode.clean:
+	${MAKE} -f rules/referenceComparativeAnnotator.mk annotationGencodeSubsetClean gencodeSubset=$*
 
 ifneq (${gencodeSubset},)
 
@@ -46,5 +51,8 @@ ${comparativeAnnotationDone}: ${refGp} ${refFasta} ${refSizes}
 	--gencodeAttributes ${srcGencodeAttrsTsv} --outDir ${comparativeAnnotationDir} \
 	--jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
 	touch $@
+
+annotationGencodeSubsetClean:
+	rm -rf ${jobTreeCompAnnJobDir} ${comparativeAnnotationDone}
 
 endif

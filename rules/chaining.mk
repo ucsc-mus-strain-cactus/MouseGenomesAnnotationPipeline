@@ -7,8 +7,13 @@ include defs.mk
 
 all: ${mappedOrgs:%=%.dochain}
 
+clean: ${mappedOrgs:%=%.doclean}
+
 %.dochain:
 	${MAKE} -f rules/chaining.mk chain queryOrg=${srcOrg} targetOrg=$*
+
+%.doclean:
+	${MAKE} -f rules/chaining.mk chainClean queryOrg=${srcOrg} targetOrg=$*
 
 # recursive call:
 ifneq (${queryOrg},)
@@ -33,5 +38,8 @@ ${chainAll}: ${halFile} ${queryTwoBit} ${targetTwoBit}
 	@mkdir -p $(dir ${chainAll}) ${jobTreeChainTmpDir}
 	 ./bin/ucscChainNet ${jobTreeChainingOpts} ${halFile} ${queryOrg} ${queryTwoBit} ${targetOrg} \
 	        ${targetTwoBit} ${chainAll} ${netAll} > ${jobTreeJobOutput} 2>&1
+
+chainClean:
+	rm -rf ${chainAll} ${netAll}
 
 endif

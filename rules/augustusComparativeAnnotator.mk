@@ -7,14 +7,19 @@ codingTranscriptList = ${AUGUSTUS_WORK_DIR}/coding.lst
 
 all: ${codingTranscriptList} ${augustusOrgs:%=%.runOrg}
 
+clean: ${augustusOrgs:%=%.cleanOrg}
+
 ${codingTranscriptList}:
 	@mkdir -p $(dir $@)
-	hgsql -e "SELECT transcriptId,transcriptClass FROM wgEncodeGencodeAttrsVM4" ${srcOrgHgDb} | \
+	hgsql -e "SELECT transcriptId,transcriptClass FROM ${srcGencodeAttrs}" ${srcOrgHgDb} | \
 	grep -P "\tcoding" | cut -f 1,1 > $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 %.runOrg:
 	${MAKE} -f rules/augustusComparativeAnnotator.mk runOrg mapTargetOrg=$*
+
+%.cleanOrg:
+	${MAKE} -f rules/augustusComparativeAnnotator.mk cleanOrg mapTargetOrg=$*
 
 
 ifneq (${mapTargetOrg},)
@@ -130,7 +135,7 @@ ${outputBb}: ${outputBed12_8}
 
 ${outputBbSym}: ${outputBb}
 	@mkdir -p $(dir $@)
-	ln -s $< $@
+	ln -sf $< $@
 
 ${outputBed}: ${outputGp}
 	@mkdir -p $(dir $@)
@@ -167,10 +172,15 @@ ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
 
 ${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} ${augGps}
 	@mkdir -p $(dir $@)
-	@mkdir -p $(dir ${consensusDir})
 	cd ../comparativeAnnotator && ${python} augustus/consensus.py --genome ${mapTargetOrg} \
 	--refGenome ${srcOrg} --compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} \
 	--workDir ${consensusWorkDir} --augGp ${outputGp} --tmGp ${targetGp}
 	touch $@
+
+
+cleanOrg:
+	rm -rf ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} ${outputGp} ${outputBed12_8} ${outputBb} ${outputBbSym} \
+	${outputBed} ${augustusFa} ${augustusFaidx} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} \
+	${consensusDone} ${jobTreeAlignAugustusJobDir} ${jobTreeAugustusCompAnnJobDir} ${jobTreeAugustusJobDir}
 
 endif

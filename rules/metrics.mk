@@ -5,27 +5,26 @@ include defs.mk
 
 ifneq (${gencodeSubset},)
 
-# done flag dir
-doneFlagDir = ${DONE_FLAG_DIR}/${srcOrg}/${gencodeSubset}
-
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
-compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
-basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
-refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 metricsDir = ${comparativeAnnotationDir}/metrics
+# done flag dir
+doneFlagDir = ${DONE_FLAG_DIR}/${gencodeSubset}
 metricsFlag = ${doneFlagDir}/metrics.done
 
 endif
 
-all: gencode
+all: ${gencodeSubsets:%=%.gencode}
 
-gencode: ${gencodeSubsets:%=%.gencode}
+clean: ${gencodeSubsets:%=%.gencodeClean}
 
 %.gencode:
 	${MAKE} -f rules/metrics.mk annotationGencodeSubset gencodeSubset=$* 
+
+%.gencodeClean:
+	${MAKE} -f rules/metrics.mk annotationGencodeSubsetClean gencodeSubset=$* 
 
 
 ifneq (${gencodeSubset},)
@@ -37,7 +36,10 @@ ${metricsFlag}:
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} plotting/transmap_analysis.py --outDir ${metricsDir} \
 	--genomes ${augustusOrgs} --refGenome ${srcOrg} --gencode ${gencodeSubset} \
-	--comparativeAnnotationDir ${comparativeAnnotationDir}
+	--comparativeAnnotationDir ${comparativeAnnotationDir} --refGp ${refGp}
 	touch $@
+
+annotationGencodeSubsetClean:
+	rm -rf ${metricsFlag}
 
 endif

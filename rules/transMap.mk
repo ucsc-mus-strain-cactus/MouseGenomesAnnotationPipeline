@@ -1,10 +1,14 @@
 include defs.mk
 
-all: transMapOrg
+all: ${mappedOrgs:%=%.transMapOrg}
 
-transMapOrg: ${mappedOrgs:%=%.transMapOrg}
+clean: ${mappedOrgs:%=%.transMapOrgClean}
+
 %.transMapOrg:
 	${MAKE} -f rules/transMap.mk transMap mapTargetOrg=$*
+
+%.transMapOrgClean:
+	${MAKE} -f rules/transMap.mk transMapClean mapTargetOrg=$*
 
 
 ifneq (${mapTargetOrg},)
@@ -29,14 +33,15 @@ transMapGp = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gp}
 mappingChains = ${CHAINING_DIR}/${srcOrg}-${mapTargetOrg}.all.chain.gz
 
 
-transMap: test ${transMapPsl} ${transMapGp}
+transMap: ${transMapPsl} ${transMapGp}
+
+transMapClean: 
+	rm -rf ${transMapDataDir}/transMap*.psl ${transMapDataDir}/transMap*.gp
+
 
 ###
 # genomic chain mapping
 ###
-
-test:
-	@echo ${mappingChains}
 
 # map and update match stats, which likes target sort for speed
 ${transMapDataDir}/transMap%.psl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa ${mappingChains} ${targetTwoBit}
