@@ -5,8 +5,6 @@ include defs.mk
 
 ifneq (${gencodeSubset},)
 
-refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
-
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 metricsDir = ${comparativeAnnotationDir}/metrics
@@ -36,7 +34,7 @@ ${metricsFlag}:
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} plotting/transmap_analysis.py --outDir ${metricsDir} \
 	--genomes ${augustusOrgs} --refGenome ${srcOrg} --gencode ${gencodeSubset} \
-	--comparativeAnnotationDir ${comparativeAnnotationDir} --refGp ${refGp}
+	--comparativeAnnotationDir ${comparativeAnnotationDir}
 	touch $@
 
 annotationGencodeSubsetClean:

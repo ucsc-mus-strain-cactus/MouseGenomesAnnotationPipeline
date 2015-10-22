@@ -44,6 +44,8 @@ clean:
 	${MAKE} -f rules/transMap.mk clean
 	${MAKE} -f rules/referenceComparativeAnnotator.mk clean
 	${MAKE} -f rules/comparativeAnnotator.mk clean
-	${MAKE} -f rules/augustusComparativeAnnotator.mk clean
 	${MAKE} -f rules/metrics.mk clean
+
+cleanAugustus:
+	${MAKE} -f rules/augustusComparativeAnnotator.mk clean
 	${MAKE} -f rules/augustusMetrics.mk clean

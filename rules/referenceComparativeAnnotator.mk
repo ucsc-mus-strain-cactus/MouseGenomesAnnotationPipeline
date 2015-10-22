@@ -5,9 +5,9 @@ include defs.mk
 
 all: gencode
 
-clean: ${gencodeSubsets:%=%.gencode.clean}
-
 gencode: ${gencodeSubsets:%=%.gencode}
+
+clean: ${gencodeSubsets:%=%.gencode.clean}
 
 %.gencode:
 	${MAKE} -f rules/referenceComparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*

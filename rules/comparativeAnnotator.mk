@@ -5,15 +5,15 @@ include defs.mk
 
 all: gencode
 
-clean: ${gencodeSubsets:%=%.gencode.clean}
-
 gencode: ${gencodeSubsets:%=%.gencode}
 
+clean: ${gencodeSubsets:%=%.gencode.clean}
+
 %.gencode:
-	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubsetClean gencodeSubset=$*
+	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
 
 %.gencode.clean:
-	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubset gencodeSubset=$*
+	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubsetClean gencodeSubset=$*
 
 annotationGencodeSubset: ${augustusOrgs:%=%.annotationGencodeSubset}
 
