@@ -2,38 +2,32 @@
 include ../pipeline/config.mk
 
 # base directory definitions
-MSCA_PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
-MSCA_DATA_DIR = ${MSCA_PROJ_DIR}/pipeline_data
-MSCA_ASSMEBLIES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
-HAL_BIN_DIR = ${MSCA_PROJ_DIR}/src/progressiveCactus/submodules/hal/bin
-PYCBIO_DIR = ${MSCA_PROJ_DIR}/src/pycbio
+PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
+DATA_DIR = ${PROJ_DIR}/pipeline_data
+ASSMEBLIES_DIR = ${DATA_DIR}/assemblies/${VERSION}
+HAL_BIN_DIR = ${PROJ_DIR}/src/progressiveCactus/submodules/hal/bin
+PYCBIO_DIR = ${PROJ_DIR}/src/pycbio
 
-TRANS_MAP_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/transMap/${TRANS_MAP_VERSION}
-TMR_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/augustus/tmr
+TRANS_MAP_DIR = ${DATA_DIR}/comparative/${VERSION}/transMap/${TRANS_MAP_VERSION}
+TMR_DIR = ${DATA_DIR}/comparative/${VERSION}/augustus/tmr
 SRC_GENCODE_DATA_DIR = ${TRANS_MAP_DIR}/data
-ASM_GENOMES_DIR = ${MSCA_DATA_DIR}/assemblies/${MSCA_VERSION}
-CHAIN_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chains
-ANNOTATION_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
+ASM_GENOMES_DIR = ${DATA_DIR}/assemblies/${VERSION}
+CHAIN_DIR = ${DATA_DIR}/comparative/${VERSION}/chains
+ANNOTATION_DIR = ${DATA_DIR}/comparative/${VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
 
-DONE_FLAG_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/completion_flags
-
-###
-# genome and organisms.  The term `org' indicated the abbreviation for the organism,
-# the term `orgDb' refers to the browser database name, in the form Mus${org}_${MSCA_VERSION}
-###
-allOrgs = ${srcOrg} ${mappedOrgs}
+DONE_FLAG_DIR = ${DATA_DIR}/comparative/${VERSION}/completion_flags
 
 # this is function to generate the orgDb name from an org, use it with:
 #    $(call orgToOrgDbFunc,${yourOrg})
-orgToOrgDbFunc = Mus${1}_${MSCA_VERSION}
+orgToOrgDbFunc = Mus${1}_${VERSION}
 
 # HAL file with simple and browser database names (e.g. Mus_XXX_1411)
-halFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}.hal
-halBrowserFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_browser.hal
+halFile = ${DATA_DIR}/comparative/${VERSION}/cactus/${VERSION}.hal
+halBrowserFile = ${DATA_DIR}/comparative/${VERSION}/cactus/${VERSION}_browser.hal
 
 # LODs (based off the halBrowserFile)
-lodTxtFile = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_lod.txt
-lodDir = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/cactus/${MSCA_VERSION}_lods
+lodTxtFile = ${DATA_DIR}/comparative/${VERSION}/cactus/${VERSION}_lod.txt
+lodDir = ${DATA_DIR}/comparative/${VERSION}/cactus/${VERSION}_lods
 
 ###
 # GENCODE gene sets
@@ -58,10 +52,6 @@ srcGencodeAllFa = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.fa}
 srcGencodeAllPsl = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.psl}
 srcGencodeAllCds = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.cds}
 srcGencodeAllBed = ${srcGencodeSubsets:%=${SRC_GENCODE_DATA_DIR}/%.bed}
-
-###
-# transmap
-###
 
 # hgDb tables used in transMap/comparativeAnnotator
 transMapGencodeBasic = transMap${gencodeBasic}
@@ -97,19 +87,18 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # at this point is only run on one gencode subset to avoid wasted computation
 ##
 augustusGencodeSet = ${gencodeComp}
-AUGUSTUS_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/augustus
+AUGUSTUS_DIR = ${DATA_DIR}/comparative/${VERSION}/augustus
 AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr
 AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
 
 
 # comparative anotations types produced
-compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors \
-		 transMapOk augustusOk AugustusTMR
+compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors AugustusTMR
 
 ###
 # chaining
 ###
-CHAINING_DIR = ${MSCA_DATA_DIR}/comparative/${MSCA_VERSION}/chaining/${CHAINING_VERSION}
+CHAINING_DIR = ${DATA_DIR}/comparative/${VERSION}/chaining/${CHAINING_VERSION}
 
 ###
 # parasol
@@ -155,7 +144,7 @@ KENT_HG_LIB_DIR = ${KENT_DIR}/src/hg/lib
 
 # root directory for jobtree jobs.  Subdirectories should
 # be create for each task
-jobTreeRootTmpDir = jobTree.tmp/${MSCA_VERSION}
+jobTreeRootTmpDir = jobTree.tmp/${VERSION}
 
 # jobTree configuration
 batchSystem = parasol
