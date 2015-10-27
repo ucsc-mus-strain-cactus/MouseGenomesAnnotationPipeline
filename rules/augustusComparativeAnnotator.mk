@@ -3,6 +3,14 @@
 ####
 include defs.mk
 
+ifeq (${hintsDb},)
+	 $(error hintsDb environment variable not set. This is not integrated yet. Use augustusHints.mk)
+endif
+
+ifneq ("$(wildcard ${hintsDb})","")
+	$(error hintsDb does not exist. Use augustusHints.mk)
+endif
+
 codingTranscriptList = ${AUGUSTUS_WORK_DIR}/coding.lst
 
 all: ${codingTranscriptList} ${augustusOrgs:%=%.runOrg}
@@ -114,7 +122,7 @@ ${inputGp}: ${sortedGp} ${intronVector}
 ${outputGtf}: ${inputGp}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeAugustusTmpDir}
-	cd ../comparativeAnnotator && ${python} augustus/run_augustus.py ${jobTreeOpts} \
+	cd ../comparativeAnnotator && ${python} augustus/run_augustus.py ${jobTreeOpts} --hintsDb ${hintsDb} \
 	--inputGp $< --outputGtf $@ --genome ${mapTargetOrg} --chromSizes ${targetSizes} \
 	--fasta ${targetFasta} --jobTree ${jobTreeAugustusJobDir} &> ${jobTreeAugustusJobOutput}
 

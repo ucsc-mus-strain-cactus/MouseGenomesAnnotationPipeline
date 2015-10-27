@@ -25,7 +25,7 @@ comparativeAnnotator: referenceComparativeAnnotator
 	${MAKE} -f rules/comparativeAnnotator.mk
 
 augustusComparativeAnnotator: comparativeAnnotator
-	${MAKE} -f rules/augustusComparativeAnnotator.mk
+	${MAKE} -f rules/augustusComparativeAnnotator.mk hintsDb=${hintsDb}
 
 metrics: comparativeAnnotator
 	${MAKE} -f rules/metrics.mk
