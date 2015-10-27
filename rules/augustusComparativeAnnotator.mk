@@ -3,14 +3,6 @@
 ####
 include defs.mk
 
-ifeq (${hintsDb},)
-	 $(error hintsDb environment variable not set. This is not integrated yet. Use augustusHints.mk)
-endif
-
-ifneq ("$(wildcard ${hintsDb})","")
-	$(error hintsDb does not exist. Use augustusHints.mk)
-endif
-
 codingTranscriptList = ${AUGUSTUS_WORK_DIR}/coding.lst
 
 all: ${codingTranscriptList} ${augustusOrgs:%=%.runOrg}
