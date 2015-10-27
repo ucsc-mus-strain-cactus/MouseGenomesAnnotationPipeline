@@ -15,7 +15,7 @@ ASM_GENOMES_DIR = ${DATA_DIR}/assemblies/${VERSION}
 CHAIN_DIR = ${DATA_DIR}/comparative/${VERSION}/chains
 ANNOTATION_DIR = ${DATA_DIR}/comparative/${VERSION}/comparativeAnnotation/${COMPARATIVE_ANNOTATOR_VERSION}
 
-DONE_FLAG_DIR = ${DATA_DIR}/comparative/${VERSION}/completion_flags
+DONE_FLAG_DIR = ${DATA_DIR}/comparative/${VERSION}/pipeline_completion_flags
 
 # this is function to generate the orgDb name from an org, use it with:
 #    $(call orgToOrgDbFunc,${yourOrg})
