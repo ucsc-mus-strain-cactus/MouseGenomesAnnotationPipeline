@@ -33,7 +33,7 @@ annotationGencodeSubset: ${metricsFlag}
 ${metricsFlag}:
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} plotting/transmap_analysis.py --outDir ${metricsDir} \
-	--genomes ${augustusOrgs} --refGenome ${srcOrg} --gencode ${gencodeSubset} \
+	--genomes ${mappedOrgs} --refGenome ${srcOrg} --gencode ${gencodeSubset} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir}
 	touch $@
 

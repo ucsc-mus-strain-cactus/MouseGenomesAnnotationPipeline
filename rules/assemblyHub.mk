@@ -1,17 +1,16 @@
 include defs.mk
 
-# jobTree configuration
-batchSystem = singleMachine
-maxThreads = 20
-maxCpus = 1024
-defaultMemory = 8589934592
-maxJobDuration = 36000
-
 ifneq (${gencodeSubset},)
-comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}/all
+comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 assemblyHubDir = ${comparativeAnnotationDir}/assemblyHub
-jobTreeDir = $(shell pwd)/.${gencodeSubset}_assemblyHub
-log = $(shell pwd)/${gencodeSubset}_assemblyHubJobTree.log
+
+# jobTree
+jobTreeTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/assembly_hub/${mapTargetOrg}/${gencodeSubset}
+jobTreeJobOutput = ${jobTreeTmpDir}/assembly_hub.out
+jobTreeJobDir = ${jobTreeTmpDir}/jobTree
+jobTreeDone = ${doneFlagDir}/assemblyHub.done
+
+
 endif
 
 
@@ -23,19 +22,17 @@ assemblyHub: ${gencodeSubsets:%=%.assemblyHub}
 	${MAKE} -f rules/assemblyHub.mk assemblyHubGencodeSubset gencodeSubset=$*
 
 ifneq (${gencodeSubset},)
-assemblyHubGencodeSubset: ${assemblyHubDir}/DONE
-endif
+assemblyHubGencodeSubset: ${jobTreeDone}
 
-
-${assemblyHubDir}/DONE: ${comparativeAnnotationDir}/DONE
-	if [ -d ${halJobTreeDir} ]; then rm -rf ${halJobTreeDir}; fi
-	if [ -d ${assemblyHubDir} ]; then rm -rf ${assemblyHubDir}; mkdir ${assemblyHubDir}; fi
+${jobTreeDone}:
+	@mkdir -p $(dir $@)
+	@mkdir -p ${jobTreeTmpDir}
 	bigBedDirs="$(shell /bin/ls -1d ${comparativeAnnotationDir}/bigBedfiles/* | paste -s -d ",")" ;\
-	cd ../comparativeAnnotator && export PYTHONPATH=./ && export \
-	PATH=./hal/bin/:./bin/:./sonLib/bin:./jobTree/bin:${PATH} && \
-	python hal/assemblyHub/hal2assemblyHub.py ${halFile} ${assemblyHubDir} \
-	--finalBigBedDirs $$bigBedDirs --maxThreads=${maxThreads} --batchSystem=singleMachine \
-	--defaultMemory=${defaultMemory} --jobTree ${jobTreeDir} \
-	--maxJobDuration ${maxJobDuration} --stats --shortLabel ${MSCA_VERSION} \
-	--longLabel ${MSCA_VERSION} --hub ${MSCA_VERSION} &> ${log}
+	cd ../comparativeAnnotator && export PYTHONPATH=./ && \
+	python hal/assemblyHub/hal2assemblyHub.py --batchSystem singleMachine --maxThreads 10 \
+	--jobTree ${jobTreeJobDir} ${halFile} ${assemblyHubDir} \
+	--finalBigBedDirs $$bigBedDirs --shortLabel ${GORILLA_VERSION} --longLabel ${GORILLA_VERSION} \
+	--hub ${GORILLA_VERSION} &> ${jobTreeJobOutput}
 	touch $@
+
+endif
