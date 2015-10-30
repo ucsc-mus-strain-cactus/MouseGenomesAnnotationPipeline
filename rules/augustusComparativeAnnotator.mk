@@ -36,6 +36,7 @@ comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
 # input files
 transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${augustusGencodeSet}.gp
+refPsl = ${SRC_GENCODE_DATA_DIR}/wgEncode${augustusGencodeSet}.psl
 refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 psl = ${transMapDataDir}/transMap${augustusGencodeSet}.psl
 targetGp = ${transMapDataDir}/transMap${augustusGencodeSet}.gp
@@ -97,7 +98,7 @@ runOrg: ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} ${outputGp} ${output
 ${intronVector}:
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} augustus/find_intron_vector.py --genome ${mapTargetOrg} \
-	--gp ${targetGp} --refGp ${refGp} --psl ${psl} --outPath ${intronVector}.${tmpExt}
+	--refPsl ${refPsl} --psl ${psl} --gp ${targetGp} --outPath ${intronVector}.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${sortedGp}: ${targetGp}

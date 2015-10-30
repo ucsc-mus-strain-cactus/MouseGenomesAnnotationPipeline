@@ -15,9 +15,9 @@ clean: ${gencodeSubsets:%=%.gencode.clean}
 %.gencode.clean:
 	${MAKE} -f rules/comparativeAnnotator.mk annotationGencodeSubsetClean gencodeSubset=$*
 
-annotationGencodeSubset: ${augustusOrgs:%=%.annotationGencodeSubset}
+annotationGencodeSubset: ${mappedOrgs:%=%.annotationGencodeSubset}
 
-annotationGencodeSubsetClean: ${augustusOrgs:%=%.annotationGencodeSubsetClean}
+annotationGencodeSubsetClean: ${mappedOrgs:%=%.annotationGencodeSubsetClean}
 
 %.annotationGencodeSubset:
 	${MAKE} -f rules/comparativeAnnotator.mk runOrg mapTargetOrg=$* gencodeSubset=${gencodeSubset}
@@ -58,6 +58,7 @@ transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 refGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.gp
 refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 psl = ${transMapDataDir}/transMap${gencodeSubset}.psl
+refPsl = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeSubset}.psl
 targetGp = ${transMapDataDir}/transMap${gencodeSubset}.gp
 targetFasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fa
 targetSizes = ${ASM_GENOMES_DIR}/${mapTargetOrg}.chrom.sizes
@@ -71,7 +72,8 @@ ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFa
 	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
 	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --targetGp ${targetGp} \
 	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
-	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeCompAnnJobDir} &> ${jobTreeCompAnnJobOutput}
+	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeCompAnnJobDir} --refPsl ${refPsl} \
+	&> ${jobTreeCompAnnJobOutput}
 	touch $@
 
 ${clusteringDone}: ${comparativeAnnotationDone}
