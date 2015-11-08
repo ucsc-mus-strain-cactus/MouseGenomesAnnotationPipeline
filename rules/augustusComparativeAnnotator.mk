@@ -32,6 +32,7 @@ doneFlagDir = ${DONE_FLAG_DIR}/${mapTargetOrg}/${augustusGencodeSet}
 
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
+metricsDir = ${comparativeAnnotationDir}/metrics
 
 # input files
 transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
@@ -61,6 +62,12 @@ jobTreeAlignAugustusJobOutput = ${jobTreeAlignAugustusTmpDir}/alignAugustus.out
 jobTreeAlignAugustusJobDir = ${jobTreeAlignAugustusTmpDir}/jobTree
 augustusAlignmentDone =  ${doneFlagDir}/augustusAlignment.done
 
+# jobTree (for clustering classifiers)
+jobTreeClusterAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusClusterToReference/${mapTargetOrg}/${augustusGencodeSet}
+jobTreeClusterAugustusJobOutput = ${jobTreeClusterAugustusTmpDir}/clusterAugustus.out
+jobTreeClusterAugustusJobDir = ${jobTreeClusterAugustusTmpDir}/jobTree
+augustusClusterDone =  ${doneFlagDir}/augustusCluster.done
+
 # Files
 refTranscriptFasta = ${SRC_GENCODE_DATA_DIR}/wgEncode${augustusGencodeSet}.fa
 
@@ -88,12 +95,10 @@ consensusDir = ${comparativeAnnotationDir}/consensus
 consensusWorkDir = ${AUGUSTUS_WORK_DIR}/consensus
 consensusDone = ${doneFlagDir}/consensus.done
 
-compGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeComp}.gp
-basicGp = ${SRC_GENCODE_DATA_DIR}/wgEncode${gencodeBasic}.gp
 
 runOrg: ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} ${outputGp} ${outputBed12_8} ${outputBb} ${outputBbSym} \
 	${outputBed} ${augustusFa} ${augustusFaidx} ${augustusComparativeAnnotationDone} \
-	${augustusAlignmentDone} ${consensusDone}
+	${augustusAlignmentDone} ${consensusDone} ${augustusClusterDone}
 
 ${intronVector}:
 	@mkdir -p $(dir $@)
@@ -159,7 +164,7 @@ ${augustusComparativeAnnotationDone}: ${outputGp}
 	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --targetGp ${targetGp} \
 	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
 	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeAugustusCompAnnJobDir} \
-	--augustusGp $< &> ${jobTreeAugustusCompAnnJobOutput}
+	--augustusGp $< --refPsl ${refPsl} &> ${jobTreeAugustusCompAnnJobOutput}
 	touch $@
 
 ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
@@ -178,10 +183,19 @@ ${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDo
 	--workDir ${consensusWorkDir} --augGp ${outputGp} --tmGp ${targetGp}
 	touch $@
 
+${augustusClusterDone}: ${augustusComparativeAnnotationDone}
+	@mkdir -p $(dir $@)
+	@mkdir -p ${jobTreeClusterAugustusTmpDir}
+	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} --mode augustus \
+	--genome ${mapTargetOrg} --refGenome ${srcOrg} --comparativeAnnotationDir ${comparativeAnnotationDir} \
+	--outDir ${metricsDir} --gencode ${augustusGencodeSet} --jobTree ${jobTreeClusterAugustusJobDir} \
+	&> ${jobTreeClusterAugustusJobOutput}
+	touch $@
 
 cleanOrg:
 	rm -rf ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} ${outputGp} ${outputBed12_8} ${outputBb} ${outputBbSym} \
 	${outputBed} ${augustusFa} ${augustusFaidx} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} \
-	${consensusDone} ${jobTreeAlignAugustusJobDir} ${jobTreeAugustusCompAnnJobDir} ${jobTreeAugustusJobDir}
+	${consensusDone} ${jobTreeAlignAugustusJobDir} ${jobTreeAugustusCompAnnJobDir} ${jobTreeAugustusJobDir} \
+	${augustusClusterDone} ${jobTreeClusterAugustusJobDir}
 
 endif

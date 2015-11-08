@@ -1,42 +1,62 @@
 #####
 # Build an Augustus hints database. Expects a base folder to find bamfiles in.
 # which you pass as FOLDER=
-# TODO: make this work pan-genome. right now it is required you also pass GENOME=
+# TODO: make this work pan-genome. right now it is required you also pass mapTargetOrg=
 #####
 include defs.mk
 
-ifeq (${FOLDER},)
-	 $(error FOLDER environment variable not set)
+
+all: ${augustusOrgs:%=%.runOrg}
+
+clean: ${augustusOrgs:%=%.runOrgClean}
+
+%.runOrg:
+	${MAKE} -f rules/augustusHints.mk runOrg mapTargetOrg=$*
+
+%.runOrgClean:
+	${MAKE} -f rules/augustusHints.mk runOrgClean mapTargetOrg=$*
+
+
+ifneq (${mapTargetOrg},)
+
+ifneq (${filterTissues},)
+ft = --filterTissues ${filterTissues}
 endif
 
-ifeq (${GENOME},)
-	 $(error GENOME environment variable not set)
+ifneq (${filterCenters},)
+fc = --filterCenters ${filterCenters}
 endif
 
+ # TODO: make this the actual hints file in defs.mk
+db = ${AUGUSTUS_DIR}/hints_ian_build.db 
+fofn = ${AUGUSTUS_DIR}/rnaseq_fofn/${mapTargetOrg}
 
-db = ${AUGUSTUS_DIR}/hints.db
-fofn = ${AUGUSTUS_DIR}/rnaseq_files
+fasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fa
 
-fasta = ${ASM_GENOMES_DIR}/${GENOME}.fa
+# done flag dir
+doneFlagDir = ${DONE_FLAG_DIR}/${mapTargetOrg}
 
 # jobTree
-jobTreeTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustus_db
+jobTreeTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustus_db/${mapTargetOrg}
 jobTreeJobOutput = ${jobTreeTmpDir}/augustus_hints_db.out
 jobTreeJobDir = ${jobTreeTmpDir}/jobTree
 done = ${doneFlagDir}/hints_db.done
 
-all: ${fofn} ${db}
-
-clean:
-	rm -rf ${fofn} ${db} ${jobTreeJobDir}
+runOrg: ${fofn} ${done}
 
 ${fofn}:
 	@mkdir -p $(dir $@)
-	find ${FOLDER} | grep bam$$ > $@
+	find ${rnaSeqDataDir} | grep bam$$ > $@
 
-${db}:
+${done}:
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeTmpDir}
 	cd ../comparativeAnnotator && ${python} augustus/build_hints_db.py ${jobTreeOpts} \
-	--genome ${GENOME} --bamFofn ${fofn} --fasta ${fasta} --database ${db} \
-	--jobTree ${jobTreeJobDir} &> ${jobTreeJobOutput}
+	--genome ${mapTargetOrg} --bamFofn ${fofn} --fasta ${fasta} --database ${db} ${fc} ${ft} \
+	--jobTree ${jobTreeJobDir} --batchSystem singleMachine --maxThreads 60 &> ${jobTreeJobOutput}
+	touch $@
+
+runOrgClean:
+	rm -rf ${fofn} ${done} ${jobTreeJobDir}
+
+endif

@@ -116,7 +116,7 @@ tmpExt = ${host}.${ppid}.tmp
 SHELL = /bin/bash -beEu
 export SHELLOPTS := pipefail
 PYTHON_BIN = /hive/groups/recon/local/bin
-AUGUSTUS_BIN_DIR = /cluster/home/mario/augustus/trunks/bin
+AUGUSTUS_BIN_DIR = /hive/users/ifiddes/augustus/trunks/bin
 
 python = ${PYTHON_BIN}/python
 export PATH := ${PYTHON_BIN}:${PYCBIO_DIR}/bin:./bin:${HAL_BIN_DIR}:${AUGUSTUS_BIN_DIR}:${PATH}
@@ -151,5 +151,5 @@ batchSystem = parasol
 maxThreads = 20
 defaultMemory = 8589934592
 maxJobDuration = 28800
-jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem ${batchSystem} --parasolCommand $(shell pwd)/bin/remparasol \
+jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem ${batchSystem} --parasolCommand $(shell pwd -P)/bin/remparasol \
               --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --stats

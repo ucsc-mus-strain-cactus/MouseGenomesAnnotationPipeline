@@ -10,15 +10,14 @@ metricsDir = ${consensusDir}/metrics
 consensusWorkDir = ${AUGUSTUS_WORK_DIR}/consensus
 
 # done flag dir
-doneFlagDir = ${DONE_FLAG_DIR}/${augustusGencodeSet}
-metricsFlag = ${doneFlagDir}/augustus_metrics.done
+metricsFlag = ${DONE_FLAG_DIR}/augustus_metrics.done
 
 all: ${metricsFlag}
 
 ${metricsFlag}:
 	@mkdir -p $(dir $@)
-	cd ../comparativeAnnotator && ${python} plotting/consensus_plots.py --compAnnPath ${comparativeAnnotationDir} --genomes ${augustusOrgs} \
-	--gencode ${augustusGencodeSet} --workDir ${consensusWorkDir} --outDir ${metricsDir}
+	cd ../comparativeAnnotator && ${python} plotting/consensus_plots.py --compAnnPath ${comparativeAnnotationDir} \
+	--genomes ${augustusOrgs} --gencode ${augustusGencodeSet} --workDir ${consensusWorkDir} --outDir ${metricsDir}
 	touch $@
 
 clean:

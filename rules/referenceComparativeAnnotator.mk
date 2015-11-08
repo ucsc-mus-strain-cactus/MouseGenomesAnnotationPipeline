@@ -62,7 +62,7 @@ ${comparativeAnnotationDone}: ${refGp} ${refFasta} ${refSizes}
 ${clusteringDone}: ${comparativeAnnotationDone}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeClusteringTmpDir}
-	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} \
+	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} --mode reference \
 	--genome ${srcOrg} --refGenome ${srcOrg} --outDir ${metricsDir} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --gencode ${gencodeSubset} \
 	--jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}

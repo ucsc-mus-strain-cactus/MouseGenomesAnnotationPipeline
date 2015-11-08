@@ -79,7 +79,7 @@ ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFa
 ${clusteringDone}: ${comparativeAnnotationDone}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeClusteringTmpDir}
-	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} \
+	cd ../comparativeAnnotator && ${python} plotting/clustering.py ${jobTreeOpts} --mode transMap \
 	--genome ${mapTargetOrg} --refGenome ${srcOrg} --outDir ${metricsDir} \
 	--comparativeAnnotationDir ${comparativeAnnotationDir} --gencode ${gencodeSubset} \
 	--jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}

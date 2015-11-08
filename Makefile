@@ -49,3 +49,6 @@ clean:
 cleanAugustus:
 	${MAKE} -f rules/augustusComparativeAnnotator.mk clean
 	${MAKE} -f rules/augustusMetrics.mk clean
+
+hints:
+	${MAKE} -f rules/augustusHints.mk
