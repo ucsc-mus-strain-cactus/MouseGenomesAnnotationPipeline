@@ -1,5 +1,5 @@
-#include ../pipeline_msca/config.mk
-include ../pipeline/config.mk
+include ../pipeline_msca/config.mk
+#include ../pipeline/config.mk
 
 # base directory definitions
 PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus

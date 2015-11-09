@@ -10,7 +10,7 @@ metricsDir = ${consensusDir}/metrics
 consensusWorkDir = ${AUGUSTUS_WORK_DIR}/consensus
 
 # done flag dir
-metricsFlag = ${DONE_FLAG_DIR}/augustus_metrics.done
+metricsFlag = ${DONE_FLAG_DIR}/${augustusGencodeSet}_augustus_metrics.done
 
 all: ${metricsFlag}
 

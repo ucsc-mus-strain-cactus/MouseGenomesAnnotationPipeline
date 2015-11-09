@@ -52,7 +52,7 @@ jobTreeAugustusJobDir = ${jobTreeAugustusTmpDir}/jobTree
 
 # jobTree (for Augustus Comparative Annotator)
 jobTreeAugustusCompAnnTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusComparativeAnnotator/${mapTargetOrg}/${augustusGencodeSet}
-jobTreeAugustusCompAnnJobOutput = ${jobTreeAugustusCompAnnTmpDir}/comparativeAnnotator.out
+jobTreeAugustusCompAnnJobOutput = ${jobTreeAugustusCompAnnTmpDir}/augustusComparativeAnnotator.out
 jobTreeAugustusCompAnnJobDir = ${jobTreeAugustusCompAnnTmpDir}/jobTree
 augustusComparativeAnnotationDone = ${doneFlagDir}/augustusComparativeAnnotation.done
 
@@ -63,7 +63,7 @@ jobTreeAlignAugustusJobDir = ${jobTreeAlignAugustusTmpDir}/jobTree
 augustusAlignmentDone =  ${doneFlagDir}/augustusAlignment.done
 
 # jobTree (for clustering classifiers)
-jobTreeClusterAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusClusterToReference/${mapTargetOrg}/${augustusGencodeSet}
+jobTreeClusterAugustusTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/augustusClustering/${mapTargetOrg}/${augustusGencodeSet}
 jobTreeClusterAugustusJobOutput = ${jobTreeClusterAugustusTmpDir}/clusterAugustus.out
 jobTreeClusterAugustusJobDir = ${jobTreeClusterAugustusTmpDir}/jobTree
 augustusClusterDone =  ${doneFlagDir}/augustusCluster.done
@@ -157,16 +157,6 @@ ${augustusFaidx}: ${augustusFa}
 	@mkdir -p $(dir $@)
 	samtools faidx $<
 
-${augustusComparativeAnnotationDone}: ${outputGp}
-	@mkdir -p $(dir $@)
-	@mkdir -p ${jobTreeAugustusCompAnnTmpDir}
-	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
-	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --targetGp ${targetGp} \
-	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
-	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeAugustusCompAnnJobDir} \
-	--augustusGp $< --refPsl ${refPsl} &> ${jobTreeAugustusCompAnnJobOutput}
-	touch $@
-
 ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeAlignAugustusTmpDir}
@@ -176,7 +166,17 @@ ${augustusAlignmentDone}: ${augustusFa} ${augustusFaidx}
 	--jobTree ${jobTreeAlignAugustusJobDir} &> ${jobTreeAlignAugustusJobOutput}
 	touch $@
 
-${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} ${augGps}
+${augustusComparativeAnnotationDone}: ${outputGp} ${augustusAlignmentDone}
+	@mkdir -p $(dir $@)
+	@mkdir -p ${jobTreeAugustusCompAnnTmpDir}
+	cd ../comparativeAnnotator && ${python} src/annotation_pipeline.py ${mode} ${jobTreeOpts} \
+	--refGenome ${srcOrg} --genome ${mapTargetOrg} --annotationGp ${refGp} --psl ${psl} --targetGp ${targetGp} \
+	--fasta ${targetFasta} --refFasta ${refFasta} --sizes ${targetSizes} --outDir ${comparativeAnnotationDir} \
+	--gencodeAttributes ${srcGencodeAttrsTsv} --jobTree ${jobTreeAugustusCompAnnJobDir} \
+	--augustusGp $< --refPsl ${refPsl} &> ${jobTreeAugustusCompAnnJobOutput}
+	touch $@
+
+${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone}
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} augustus/consensus.py --genome ${mapTargetOrg} \
 	--refGenome ${srcOrg} --compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} \

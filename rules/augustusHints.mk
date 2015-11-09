@@ -46,14 +46,14 @@ runOrg: ${fofn} ${done}
 
 ${fofn}:
 	@mkdir -p $(dir $@)
-	find ${rnaSeqDataDir} | grep bam$$ > $@
+	find ${rnaSeqDataDir}/${mapTargetOrg} | grep bam$$ > $@
 
 ${done}:
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeTmpDir}
 	cd ../comparativeAnnotator && ${python} augustus/build_hints_db.py ${jobTreeOpts} \
 	--genome ${mapTargetOrg} --bamFofn ${fofn} --fasta ${fasta} --database ${db} ${fc} ${ft} \
-	--jobTree ${jobTreeJobDir} --batchSystem singleMachine --maxThreads 60 &> ${jobTreeJobOutput}
+	--jobTree ${jobTreeJobDir} --batchSystem singleMachine --maxThreads 20 &> ${jobTreeJobOutput}
 	touch $@
 
 runOrgClean:
