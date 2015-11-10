@@ -6,7 +6,7 @@
 include defs.mk
 
 
-all: ${augustusOrgs:%=%.runOrg}
+all: ${augustusOrgs:%=%.runOrg} merge
 
 clean: ${augustusOrgs:%=%.runOrgClean}
 
@@ -53,10 +53,20 @@ ${done}:
 	@mkdir -p ${jobTreeTmpDir}
 	cd ../comparativeAnnotator && ${python} augustus/build_hints_db.py ${jobTreeOpts} \
 	--genome ${mapTargetOrg} --bamFofn ${fofn} --fasta ${fasta} --database ${db} ${fc} ${ft} \
-	--jobTree ${jobTreeJobDir} --batchSystem singleMachine --maxThreads 20 &> ${jobTreeJobOutput}
+	--jobTree ${jobTreeJobDir} &> ${jobTreeJobOutput}
 	touch $@
 
 runOrgClean:
 	rm -rf ${fofn} ${done} ${jobTreeJobDir}
+
+else
+
+mergeDone = ${doneFlagDir}/merged_hints.done
+
+merge: ${mergeDone}
+
+${mergeDone}:
+	load2sqlitedb --dbaccess=${db} --makeIdx
+	touch $@
 
 endif
