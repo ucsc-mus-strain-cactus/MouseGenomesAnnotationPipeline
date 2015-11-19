@@ -176,7 +176,7 @@ ${augustusComparativeAnnotationDone}: ${outputGp} ${augustusAlignmentDone}
 	--augustusGp $< --refPsl ${refPsl} &> ${jobTreeAugustusCompAnnJobOutput}
 	touch $@
 
-${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone}
+${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone}
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} augustus/consensus.py --genome ${mapTargetOrg} \
 	--refGenome ${srcOrg} --compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} \

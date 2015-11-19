@@ -92,6 +92,14 @@ AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr
 AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
 
 
+##
+# AugustusCGP
+##
+AUGUSTUS_CGP_BASE_DIR = ${AUGUSTUS_DIR}/cgp
+AUGUSTUS_CGP_DIR = ${AUGUSTUS_CGP_BASE_DIR}/renamedCGP
+AUGUSTUS_CGP_INTRON_BITS_DIR = ${AUGUSTUS_CGP_BASE_DIR}/intronbits/intron_bits_only
+
+
 # comparative anotations types produced
 compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors AugustusTMR
 
