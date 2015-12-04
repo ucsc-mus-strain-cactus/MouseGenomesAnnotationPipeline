@@ -10,7 +10,7 @@ all: ${srcGencodeAttrsTsv} ${srcGencodeAllGp} ${srcGencodeAllBed} ${srcGencodeAl
 	 ${srcGencodeAllPsl} ${srcGencodeAllCds} ${queryFasta} ${queryTwoBit} ${queryChromSizes}
 
 clean:
-	rm -rf ${srcGencodeAttrsTsv} ${SRC_GENCODE_DATA_DIR}/*.gp ${srcGencodeDataDir}/*.bed ${SRC_GENCODE_DATA_DIR}/*.fa* \
+	rm -rf ${srcGencodeAttrsTsv} ${SRC_GENCODE_DATA_DIR}/*.gp ${SRC_GENCODE_DATA_DIR}/*.bed ${SRC_GENCODE_DATA_DIR}/*.fa* \
 	${SRC_GENCODE_DATA_DIR}/*.cds ${SRC_GENCODE_DATA_DIR}/*.psl ${queryFasta} ${queryTwoBit} ${queryChromSizes}
 
 # awk expression to edit chrom names in UCSC format.  Assumse all alts are version 1.
@@ -29,7 +29,7 @@ ${SRC_GENCODE_DATA_DIR}/%.gp:
 	hgsql -Ne 'select * from $*' ${srcOrgHgDb} | cut -f 2- | tawk -v chromCol=2 '${editUcscChrom}' > $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-${srcGencodeDataDir}/%.bed: ${srcGencodeDataDir}/%.gp
+${SRC_GENCODE_DATA_DIR}/%.bed: ${SRC_GENCODE_DATA_DIR}/%.gp
 	@mkdir -p $(dir $@)
 	genePredToBed $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@

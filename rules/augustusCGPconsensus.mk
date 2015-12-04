@@ -10,6 +10,18 @@ refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 # reference CDS fasta to be built
 refTxCdsFasta = ${SRC_GENCODE_DATA_DIR}/wgEncode${augustusGencodeSet}.CDS.fa
 
+# directories
+comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
+cgpConsensusDir = ${comparativeAnnotationDir}/cgp_consensus
+consensusDir = ${comparativeAnnotationDir}/consensus
+metricsDir = ${cgpConsensusDir}/metrics
+consensusWorkDir = ${AUGUSTUS_WORK_DIR}/cgp_consensus
+doneFlagDir = ${DONE_FLAG_DIR}/${mapTargetOrg}/${augustusGencodeSet}
+
+# final metrics
+metricsDone = ${doneFlagDir}/cgpMetrics.done
+
+
 all: ${refTxCdsFasta} ${augustusOrgs:%=%.runOrg} metrics
 
 clean: ${augustusOrgs:%=%.cleanOrg} cleanRest
@@ -28,13 +40,6 @@ ${refTxCdsFasta}: ${refGp}
 
 ifneq (${mapTargetOrg},)
 
-# directories
-comparativeAnnotationDir = ${ANNOTATION_DIR}/${augustusGencodeSet}
-cgpConsensusDir = ${comparativeAnnotationDir}/cgp_consensus
-consensusDir = ${comparativeAnnotationDir}/consensus
-metricsDir = ${cgpConsensusDir}/metrics
-consensusWorkDir = ${AUGUSTUS_WORK_DIR}/cgp_consensus
-doneFlagDir = ${DONE_FLAG_DIR}/${mapTargetOrg}/${augustusGencodeSet}
 transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 
 # input files
@@ -58,9 +63,6 @@ jobTreeAlignCgpTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/alignCgp/${mapTarge
 jobTreeAlignCgpJobOutput = ${jobTreeAlignCgpTmpDir}/alignCgp.out
 jobTreeAlignCgpJobDir = ${jobTreeAlignCgpTmpDir}/jobTree
 alignCgpDone = ${doneFlagDir}/alignCgpDone.done
-
-# final metrics
-metricsDone = ${doneFlagDir}/cgpMetrics.done
 
 
 runOrg: ${alignCdsDone} ${alignCgpDone} ${outputConsensusGp}
@@ -99,7 +101,8 @@ else
 metrics: ${metricsDone}
 
 ${metricsDone}:
-	cd ../comparativeAnnotator && ${python} scripts/cgp_metrics.py
+	cd ../comparativeAnnotator && ${python} scripts/cgp_consensus_plots.py --compAnnPath ${comparativeAnnotationDir} \
+	--genomes ${augustusOrgs} --workDir ${consensusWorkDir} --outDir ${metricsDir} --gencode ${augustusGencodeSet}
 
 cleanRest:
 	rm -rf ${metricsDone} ${refTxCdsFasta}

@@ -12,10 +12,10 @@ all: ${augustusOrgs:%=%.runOrg} finishDb
 clean: ${augustusOrgs:%=%.runOrgClean}
 
 %.runOrg:
-    ${MAKE} -f rules/augustusHints.mk runOrg mapTargetOrg=$*
+	${MAKE} -f rules/augustusHints.mk runOrg mapTargetOrg=$*
 
 %.runOrgClean:
-    ${MAKE} -f rules/augustusHints.mk runOrgClean mapTargetOrg=$*
+	${MAKE} -f rules/augustusHints.mk runOrgClean mapTargetOrg=$*
 
 
 ifneq (${mapTargetOrg},)
@@ -46,20 +46,20 @@ done = ${doneFlagDir}/hintsDb.done
 runOrg: ${fofn} ${done}
 
 ${fofn}:
-    @mkdir -p $(dir $@)
-    find ${rnaSeqDataDir}/${mapTargetOrg} | grep bam$$ > $@
+	@mkdir -p $(dir $@)
+	find ${rnaSeqDataDir}/${mapTargetOrg} | grep bam$$ > $@
 
 ${done}:
-    @mkdir -p $(dir $@)
-    @mkdir -p ${jobTreeTmpDir}
-    @mkdir -p ${hintsDir}
-    ${python} comparativeAnnotator/augustus/build_hints_db.py ${jobTreeOpts} \
-    --genome ${mapTargetOrg} --bamFofn ${fofn} --fasta ${fasta} --database ${hintsDb} ${fc} ${ft} \
-    --jobTree ${jobTreeJobDir} --hintsDir ${hintsDir} &> ${jobTreeJobOutput}
-    touch $@
+	@mkdir -p $(dir $@)
+	@mkdir -p ${jobTreeTmpDir}
+	@mkdir -p ${hintsDir}
+	${python} ../comparativeAnnotator/augustus/build_hints_db.py ${jobTreeOpts} \
+	--genome ${mapTargetOrg} --bamFofn ${fofn} --fasta ${fasta} --database ${hintsDb} ${fc} ${ft} \
+	--jobTree ${jobTreeJobDir} --hintsDir ${hintsDir} &> ${jobTreeJobOutput}
+	touch $@
 
 runOrgClean:
-    rm -rf ${fofn} ${done} ${jobTreeJobDir}
+	rm -rf ${fofn} ${done} ${jobTreeJobDir}
 
 else
 
@@ -68,6 +68,6 @@ dbDone = ${DONE_FLAG_DIR}/indexedHints.done
 finishDb: ${dbDone}
 
 ${dbDone}:
-    load2sqlitedb --makeIdx --dbaccess ${hintsDb}
+	load2sqlitedb --makeIdx --dbaccess ${hintsDb}
 
 endif

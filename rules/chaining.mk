@@ -21,7 +21,7 @@ jobTreeChainTmpDir = ${jobTreeRootTmpDir}/chaining/${queryOrg}_${targetOrg}
 jobTreeJobOutput = ${jobTreeChainTmpDir}/chaining.out
 jobTreeJobDir = ${jobTreeChainTmpDir}/jobTree
 
-jobTreeChainingOpts = ${jobTreeOpts} --jobTree=${jobTreeJobDir}
+jobTreeChainingOpts = ${jobTreeOpts} --jobTree=${jobTreeJobDir} --defaultMemory 17179869184
 
 queryTwoBit = ${ASM_GENOMES_DIR}/${queryOrg}.2bit
 targetTwoBit = ${ASM_GENOMES_DIR}/${targetOrg}.2bit

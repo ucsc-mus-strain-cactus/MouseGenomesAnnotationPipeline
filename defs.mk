@@ -58,7 +58,7 @@ transMapGencodeBasic = transMap${gencodeBasic}
 transMapGencodeComp = transMap${gencodeComp}
 transMapGencodePseudo = transMap${gencodePseudo}
 transMapGencodeAttrs = transMap${gencodeAttrs}
-transMapGencodeSubsets = ${transMapGencodeComp} #${transMapGencodeBasic} ${transMapGencodePseudo}
+transMapGencodeSubsets = ${transMapGencodeComp} ${transMapGencodeBasic} ${transMapGencodePseudo}
 
 
 ##
@@ -96,12 +96,12 @@ AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
 # AugustusCGP
 ##
 AUGUSTUS_CGP_BASE_DIR = ${AUGUSTUS_DIR}/cgp
-AUGUSTUS_CGP_DIR = ${AUGUSTUS_CGP_BASE_DIR}/renamedCGP
-AUGUSTUS_CGP_INTRON_BITS_DIR = ${AUGUSTUS_CGP_BASE_DIR}/intronbits/intron_bits_only
+AUGUSTUS_CGP_DIR = ${AUGUSTUS_CGP_BASE_DIR}/filteredCGP
+AUGUSTUS_CGP_INTRON_BITS_DIR = ${AUGUSTUS_CGP_DIR}/intronbits
 
 
 # comparative anotations types produced
-compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors AugustusTMR
+compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors transMapGood augustusGood
 
 ###
 # chaining
@@ -156,7 +156,7 @@ jobTreeRootTmpDir = jobTree.tmp/${VERSION}
 
 # jobTree configuration
 batchSystem = parasol
-maxThreads = 20
+maxThreads = 40
 defaultMemory = 8589934592
 maxJobDuration = 28800
 jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem ${batchSystem} --parasolCommand $(shell pwd -P)/bin/remparasol \
