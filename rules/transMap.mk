@@ -30,7 +30,7 @@ transMapPsl = ${transMapGencodeSubsets:%=${transMapDataDir}/%.psl}
 transMapGp = ${transMapGencodeSubsets:%=${transMapDataDir}/%.gp}
 
 # chain files
-mappingChains = ${CHAINING_DIR}/${srcOrg}-${mapTargetOrg}.all.chain.gz
+mappingChains = ${CHAINING_DIR}/${srcOrg}-${mapTargetOrg}.chain.gz
 
 
 transMap: ${transMapPsl} ${transMapGp}
