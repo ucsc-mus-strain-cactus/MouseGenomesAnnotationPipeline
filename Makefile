@@ -10,8 +10,8 @@ augustus: genomeFiles chaining transMap referenceComparativeAnnotator comparativ
 genomeFiles:
 	${MAKE} -f rules/genomeFiles.mk
 
-#chaining: genomeFiles
-#	${MAKE} -f rules/chaining.mk
+chaining: genomeFiles
+	${MAKE} -f rules/chaining.mk
 
 gencode: genomeFiles
 	${MAKE} -f rules/gencode.mk

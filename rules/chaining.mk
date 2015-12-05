@@ -27,19 +27,19 @@ queryTwoBit = ${ASM_GENOMES_DIR}/${queryOrg}.2bit
 targetTwoBit = ${ASM_GENOMES_DIR}/${targetOrg}.2bit
 
 # call functions to obtain path to chain/net files, given srcOrg,targetOrg.
-chainAllFunc = $(call chainFunc,all,${1},${2})
-netAllFunc = $(call netFunc,all,${1},${2})
+chainFunc = $(call chainFunc,all,${1},${2})
+netFunc = $(call netFunc,all,${1},${2})
 
-chainAll = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.all.chain.gz
-netAll = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.all.net.gz
+chain = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.chain.gz
+net = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.net.gz
 
-chain:  ${chainAll}
-${chainAll}: ${halFile} ${queryTwoBit} ${targetTwoBit}
-	@mkdir -p $(dir ${chainAll}) ${jobTreeChainTmpDir}
+chain:  ${chain}
+${chain}: ${halFile} ${queryTwoBit} ${targetTwoBit}
+	@mkdir -p $(dir ${chain}) ${jobTreeChainTmpDir}
 	 ./bin/ucscChainNet ${jobTreeChainingOpts} ${halFile} ${queryOrg} ${queryTwoBit} ${targetOrg} \
-	        ${targetTwoBit} ${chainAll} ${netAll} > ${jobTreeJobOutput} 2>&1
+	        ${targetTwoBit} ${chain} ${net} > ${jobTreeJobOutput} 2>&1
 
 chainClean:
-	rm -rf ${chainAll} ${netAll}
+	rm -rf ${chain} ${net} ${jobTreeJobDir}
 
 endif
