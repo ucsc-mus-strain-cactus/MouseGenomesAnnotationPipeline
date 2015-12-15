@@ -178,7 +178,7 @@ ${augustusComparativeAnnotationDone}: ${outputGp} ${augustusAlignmentDone}
 
 ${consensusDone}: ${comparativeAnnotationDone} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone}
 	@mkdir -p $(dir $@)
-	cd ../comparativeAnnotator && ${python} augustus/consensus.py --genome ${mapTargetOrg} \
+	cd ../comparativeAnnotator && ${python} src/generate_gene_set.py --genome ${mapTargetOrg} \
 	--refGenome ${srcOrg} --compAnnPath ${comparativeAnnotationDir} --outDir ${consensusDir} \
 	--workDir ${consensusWorkDir} --augGp ${outputGp} --tmGp ${targetGp}
 	touch $@
@@ -196,6 +196,6 @@ cleanOrg:
 	rm -rf ${intronVector} ${sortedGp} ${inputGp} ${outputGtf} ${outputGp} ${outputBed12_8} ${outputBb} ${outputBbSym} \
 	${outputBed} ${augustusFa} ${augustusFaidx} ${augustusComparativeAnnotationDone} ${augustusAlignmentDone} \
 	${consensusDone} ${jobTreeAlignAugustusJobDir} ${jobTreeAugustusCompAnnJobDir} ${jobTreeAugustusJobDir} \
-	${augustusClusterDone} ${jobTreeClusterAugustusJobDir}
+	${augustusClusterDone} ${jobTreeClusterAugustusJobDir} ${consensusWorkDir}
 
 endif

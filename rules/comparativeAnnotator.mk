@@ -52,6 +52,7 @@ clusteringDone = ${doneFlagDir}/classifierClustering.done
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 metricsDir = ${comparativeAnnotationDir}/metrics
+workDir = ${comparativeAnnotationDir}/work_dir
 
 # input files
 transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
@@ -63,7 +64,11 @@ targetGp = ${transMapDataDir}/transMap${gencodeSubset}.gp
 targetFasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fa
 targetSizes = ${ASM_GENOMES_DIR}/${mapTargetOrg}.chrom.sizes
 
-runOrg: ${comparativeAnnotationDone} ${clusteringDone}
+txSetDir = ${comparativeAnnotationDir}/tm_transcript_set
+txSetWorkDir = ${workDir}/tm_tx
+txSetDone = ${doneFlagDir}/tm_tx.done
+
+runOrg: ${comparativeAnnotationDone} ${clusteringDone} ${txSetDone}
 
 ${comparativeAnnotationDone}: ${psl} ${targetGp} ${refGp} ${refFasta} ${targetFasta} ${targetSizes}
 	@mkdir -p $(dir $@)
@@ -85,9 +90,16 @@ ${clusteringDone}: ${comparativeAnnotationDone}
 	--jobTree ${jobTreeClusteringJobDir} &> ${jobTreeClusteringJobOutput}
 	touch $@
 
+${txSetDone}: ${comparativeAnnotationDone}
+	@mkdir -p $(dir $@)
+	cd ../comparativeAnnotator && ${python} src/generate_gene_set.py --genome ${mapTargetOrg} \
+	--refGenome ${srcOrg} --compAnnPath ${comparativeAnnotationDir} --outDir ${txSetDir} \
+	--workDir ${txSetWorkDir} --tmGp ${targetGp}
+	touch $@
 
 cleanOrg:
-	rm -rf ${jobTreeCompAnnJobDir} ${comparativeAnnotationDone} ${jobTreeClusteringJobDir} ${clusteringDone}
+	rm -rf ${jobTreeCompAnnJobDir} ${comparativeAnnotationDone} ${jobTreeClusteringJobDir} ${clusteringDone} ${txSetDone} \
+	${txSetWorkDir}
 
 endif
 endif

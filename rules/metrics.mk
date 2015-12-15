@@ -8,8 +8,11 @@ ifneq (${gencodeSubset},)
 # output location
 comparativeAnnotationDir = ${ANNOTATION_DIR}/${gencodeSubset}
 metricsDir = ${comparativeAnnotationDir}/metrics
+txSetMetricsDir = ${comparativeAnnotationDir}/tm_transcript_set/metrics
+workDir = ${comparativeAnnotationDir}/work_dir/tm_tx
 # done flag dir
 metricsFlag = ${DONE_FLAG_DIR}/${gencodeSubset}_metrics.done
+geneSetFlag = ${DONE_FLAG_DIR}/${gencodeSubset}_gene_set_metrics.done
 
 endif
 
@@ -26,8 +29,7 @@ clean: ${gencodeSubsets:%=%.gencodeClean}
 
 ifneq (${gencodeSubset},)
 
-annotationGencodeSubset: ${metricsFlag}
-
+annotationGencodeSubset: ${metricsFlag} ${geneSetFlag}
 
 ${metricsFlag}:
 	@mkdir -p $(dir $@)
@@ -36,7 +38,13 @@ ${metricsFlag}:
 	--comparativeAnnotationDir ${comparativeAnnotationDir}
 	touch $@
 
+${geneSetFlag}:
+	@mkdir -p $(dir $@)
+	cd ../comparativeAnnotator && ${python} plotting/gene_set_plots.py --compAnnPath ${comparativeAnnotationDir} \
+	--genomes ${mappedOrgs} --refGenome ${srcOrg} --gencode ${gencodeSubset} --workDir ${workDir} --outDir ${txSetMetricsDir}
+	touch $@
+
 annotationGencodeSubsetClean:
-	rm -rf ${metricsFlag}
+	rm -rf ${metricsFlag} ${geneSetFlag}
 
 endif

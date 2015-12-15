@@ -86,7 +86,7 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # AugustusTMR
 # at this point is only run on one gencode subset to avoid wasted computation
 ##
-augustusGencodeSet = ${gencodeComp}
+augustusGencodeSet = ${gencodePseudo}
 AUGUSTUS_DIR = ${DATA_DIR}/comparative/${VERSION}/augustus
 AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr
 AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work

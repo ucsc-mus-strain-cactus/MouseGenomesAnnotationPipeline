@@ -16,8 +16,9 @@ all: ${metricsFlag}
 
 ${metricsFlag}:
 	@mkdir -p $(dir $@)
-	cd ../comparativeAnnotator && ${python} plotting/consensus_plots.py --compAnnPath ${comparativeAnnotationDir} \
-	--genomes ${augustusOrgs} --gencode ${augustusGencodeSet} --workDir ${consensusWorkDir} --outDir ${metricsDir}
+	cd ../comparativeAnnotator && ${python} plotting/gene_set_plots.py --compAnnPath ${comparativeAnnotationDir} \
+	--genomes ${augustusOrgs} --refGenome ${srcOrg} --gencode ${augustusGencodeSet} --workDir ${consensusWorkDir} \
+    --outDir ${metricsDir}
 	touch $@
 
 clean:
