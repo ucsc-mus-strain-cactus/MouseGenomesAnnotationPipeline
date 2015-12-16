@@ -21,6 +21,7 @@ file: ${fasta} ${twoBit} ${size}
 ${fasta}:
 	@mkdir -p $(dir $@)
 	${HAL_BIN_DIR}/hal2fasta ${halFile} ${org} > $@.${tmpExt}
+	pyfasta flatten $@.${tmpExt}  # produce flat fasta for pyfasta module
 	mv -f $@.${tmpExt} $@
 
 ${twoBit}: ${fasta}

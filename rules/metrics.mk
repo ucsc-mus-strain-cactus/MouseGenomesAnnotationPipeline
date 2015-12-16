@@ -11,7 +11,7 @@ metricsDir = ${comparativeAnnotationDir}/metrics
 txSetMetricsDir = ${comparativeAnnotationDir}/tm_transcript_set/metrics
 workDir = ${comparativeAnnotationDir}/work_dir/tm_tx
 # done flag dir
-metricsFlag = ${DONE_FLAG_DIR}/${gencodeSubset}_metrics.done
+#metricsFlag = ${DONE_FLAG_DIR}/${gencodeSubset}_metrics.done
 geneSetFlag = ${DONE_FLAG_DIR}/${gencodeSubset}_gene_set_metrics.done
 
 endif

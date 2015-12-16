@@ -53,7 +53,7 @@ ${done}:
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeTmpDir}
 	@mkdir -p ${hintsDir}
-	${python} ../comparativeAnnotator/augustus/build_hints_db.py ${jobTreeOpts} \
+	cd ../comparativeAnnotator && ${python} augustus/build_hints_db.py ${jobTreeOpts} \
 	--genome ${mapTargetOrg} --bamFofn ${fofn} --fasta ${fasta} --database ${hintsDb} ${fc} ${ft} \
 	--jobTree ${jobTreeJobDir} --hintsDir ${hintsDir} &> ${jobTreeJobOutput}
 	touch $@
