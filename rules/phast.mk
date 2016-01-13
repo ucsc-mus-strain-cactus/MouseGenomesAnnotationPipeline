@@ -7,7 +7,6 @@ errorFile=${PHAST_ANALYSIS_DIR}/rates.err
 
 # FIXME: don't hardcode this
 cleanedCdsBed=/hive/groups/recon/projs/mus_strain_cactus/experiments/phylogeny/basic_vm8_cds.bed
-refGenome=C57B6J
 
 all: phyloFit
 
@@ -18,10 +17,10 @@ phyloFit: ${modFile}
 # or underestimating the rate due to conserved nonsynonymous mutations.
 ${4dSitesBed}: ${cleanedCdsBed}
 	@mkdir -p $(dir $@)
-	hal4dExtract --conserved ${halFile} ${refGenome} ${cleanedCdsBed} ${4dSitesBed}.${tmpExt}
+	hal4dExtract --conserved ${halFile} ${srcOrg} ${cleanedCdsBed} ${4dSitesBed}.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 ${modFile}: ${4dSitesBed}
 	@mkdir -p $(dir $@)
-	halPhyloPTrain.py --numProc 4 --noAncestors --no4d ${halFile} ${refGenome} ${4dSitesBed} ${modFile} --error ${errorFile}
+	halPhyloPTrain.py --numProc 4 --noAncestors --no4d ${halFile} ${srcOrg} ${4dSitesBed} ${modFile} --error ${errorFile}
 	mv -f $@.${tmpExt} $@
