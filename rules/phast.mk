@@ -17,10 +17,12 @@ phyloFit: ${modFile}
 # or underestimating the rate due to conserved nonsynonymous mutations.
 ${4dSitesBed}: ${cleanedCdsBed}
 	@mkdir -p $(dir $@)
-	hal4dExtract --conserved ${halFile} ${srcOrg} ${cleanedCdsBed} ${4dSitesBed}.${tmpExt}
+	hal4dExtract --conserved ${halFile} ${srcOrg} ${cleanedCdsBed} $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
+# .mod extension required after tmpExt because phast will check the
+# output file extension for some reason
 ${modFile}: ${4dSitesBed}
 	@mkdir -p $(dir $@)
-	halPhyloPTrain.py --numProc 4 --noAncestors --no4d ${halFile} ${srcOrg} ${4dSitesBed} ${modFile} --error ${errorFile}
-	mv -f $@.${tmpExt} $@
+	halPhyloPTrain.py --numProc 4 --noAncestors --no4d ${halFile} ${srcOrg} ${4dSitesBed} $@.${tmpExt}.mod --error ${errorFile}
+	mv -f $@.${tmpExt}.mod $@
