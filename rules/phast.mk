@@ -4,13 +4,16 @@ PHAST_ANALYSIS_DIR=${DATA_DIR}/comparative/${VERSION}/phastAnalysis
 modFile=${PHAST_ANALYSIS_DIR}/rates.mod
 errorFile=${PHAST_ANALYSIS_DIR}/rates.err
 4dSitesBed=${PHAST_ANALYSIS_DIR}/4d.bed
+wigDir=${PHAST_ANALYSIS_DIR}/phyloPWigs
 
 # FIXME: don't hardcode this
 cleanedCdsBed=/hive/groups/recon/projs/mus_strain_cactus/experiments/phylogeny/basic_vm8_cds.bed
 
-all: phyloFit
+all: phyloP
 
-phyloFit: ${modFile}
+phyloP: ${modFile}
+	@mkdir -p ${wigDir}
+	halTreePhyloP.py --numProc 20 ${halFile} ${modFile} ${wigDir}
 
 # --conserved option will ensure that the 4d sites are actually 4d
 # sites in all species. This helps protect against poor annotations,
