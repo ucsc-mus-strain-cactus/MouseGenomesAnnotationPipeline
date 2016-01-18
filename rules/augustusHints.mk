@@ -6,8 +6,9 @@
 #####
 include defs.mk
 
+.PHONY: all clean runOrg
 
-all: ${augustusOrgs:%=%.runOrg} finishDb
+all: ${augustusOrgs:%=%.runOrg}
 
 clean: ${augustusOrgs:%=%.runOrgClean}
 
@@ -60,14 +61,5 @@ ${done}:
 
 runOrgClean:
 	rm -rf ${fofn} ${done} ${jobTreeJobDir}
-
-else
-
-dbDone = ${DONE_FLAG_DIR}/indexedHints.done
-
-finishDb: ${dbDone}
-
-${dbDone}:
-	load2sqlitedb --makeIdx --dbaccess ${hintsDb}
 
 endif

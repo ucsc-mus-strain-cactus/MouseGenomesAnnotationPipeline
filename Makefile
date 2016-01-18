@@ -1,11 +1,10 @@
 include defs.mk
 .PHONY: test genomeFiles chaining gencode transMap referenceComparativeAnnotator comparativeAnnotator \
-	augustusComparativeAnnotator metrics augustusMetrics 
+	hints augustusComparativeAnnotator metrics augustusMetrics 
 
 all: genomeFiles chaining transMap referenceComparativeAnnotator comparativeAnnotator metrics
 
-augustus: genomeFiles chaining transMap referenceComparativeAnnotator comparativeAnnotator \
-	augustusComparativeAnnotator metrics augustusMetrics
+augustus: all hints augustusComparativeAnnotator metrics augustusMetrics
 
 genomeFiles:
 	${MAKE} -f rules/genomeFiles.mk
@@ -25,8 +24,12 @@ referenceComparativeAnnotator: transMap
 comparativeAnnotator: referenceComparativeAnnotator
 	${MAKE} -f rules/comparativeAnnotator.mk
 
+hints:
+	${MAKE} -f rules/augustusHints.mk
+	${MAKE} -f rules/augustusHintsFinish.mk
+
 augustusComparativeAnnotator: comparativeAnnotator
-	${MAKE} -f rules/augustusComparativeAnnotator.mk hintsDb=${hintsDb}
+	${MAKE} -f rules/augustusComparativeAnnotator.mk
 
 metrics: comparativeAnnotator
 	${MAKE} -f rules/metrics.mk
@@ -50,6 +53,4 @@ clean:
 cleanAugustus:
 	${MAKE} -f rules/augustusComparativeAnnotator.mk clean
 	${MAKE} -f rules/augustusMetrics.mk clean
-
-hints:
-	${MAKE} -f rules/augustusHints.mk
+	${MAKE} -f rules/augustusHintsFinish clean

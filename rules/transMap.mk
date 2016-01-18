@@ -44,7 +44,7 @@ transMapClean:
 ###
 
 # map and update match stats, which likes target sort for speed
-${transMapDataDir}/transMap%.psl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa ${mappingChains} ${targetTwoBit}
+${transMapDataDir}/transMap%.psl: | ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.fa ${mappingChains} ${targetTwoBit}
 	@mkdir -p $(dir $@)
 	pslMap -mapInfo=${transMapDataDir}/transMap$*.mapinfo -chainMapFile ${SRC_GENCODE_DATA_DIR}/wgEncode$*.psl ${mappingChains} /dev/stdout \
 		| bin/postTransMapChain /dev/stdin /dev/stdout \
@@ -56,7 +56,7 @@ ${transMapDataDir}/transMap%.psl: ${SRC_GENCODE_DATA_DIR}/wgEncode%.psl ${SRC_GE
 ###
 # final transMap genes
 ###
-${transMapDataDir}/transMap%.gp: ${transMapDataDir}/transMap%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.cds
+${transMapDataDir}/transMap%.gp: | ${transMapDataDir}/transMap%.psl ${SRC_GENCODE_DATA_DIR}/wgEncode%.cds
 	@mkdir -p $(dir $@)
 	mrnaToGene -keepInvalid -quiet -genePredExt -ignoreUniqSuffix -insertMergeSize=0 -cdsFile=${SRC_GENCODE_DATA_DIR}/wgEncode$*.cds $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@

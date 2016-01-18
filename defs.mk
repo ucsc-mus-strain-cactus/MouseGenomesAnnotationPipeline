@@ -1,5 +1,5 @@
-#include ../pipeline_msca/config.mk
-include ../pipeline/config.mk
+include ../pipeline_msca/config.mk
+#include ../pipeline/config.mk
 
 # base directory definitions
 PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
@@ -86,7 +86,7 @@ queryChromSizes = $(call asmChromSizesFunc,${srcOrg})
 # AugustusTMR
 # at this point is only run on one gencode subset to avoid wasted computation
 ##
-augustusGencodeSet = ${gencodePseudo}
+augustusGencodeSet = ${gencodeComp}
 AUGUSTUS_DIR = ${DATA_DIR}/comparative/${VERSION}/augustus
 AUGUSTUS_TMR_DIR = ${AUGUSTUS_DIR}/tmr
 AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
@@ -106,7 +106,7 @@ compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiolo
 ###
 # chaining
 ###
-CHAINING_DIR = ${DATA_DIR}/comparative/${VERSION}/chaining/${CHAINING_VERSION}
+CHAINING_DIR = ${DATA_DIR}/comparative/${VERSION}/chaining
 
 ###
 # parasol
@@ -121,8 +121,7 @@ ppid=$(shell echo $$PPID)
 tmpExt = ${host}.${ppid}.tmp
 
 .SECONDARY:  # keep intermediates
-SHELL = /bin/bash -beEu
-export SHELLOPTS := pipefail
+SHELL = /bin/bash -beEu -o pipefail
 PYTHON_BIN = /hive/groups/recon/local/bin
 AUGUSTUS_BIN_DIR = /hive/users/ifiddes/augustus/trunks/bin
 

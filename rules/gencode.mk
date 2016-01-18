@@ -38,6 +38,7 @@ ${SRC_GENCODE_DATA_DIR}/%.fa:
 	@mkdir -p $(dir $@)
 	getRnaPred ${srcOrgHgDb} $* all stdout | faFilter -uniq stdin $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
+	pyfasta flatten $@
 
 ${SRC_GENCODE_DATA_DIR}/%.fa.fai: ${SRC_GENCODE_DATA_DIR}/%.fa
 	@mkdir -p $(dir $@)

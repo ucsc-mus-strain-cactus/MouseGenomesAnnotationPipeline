@@ -14,14 +14,14 @@ ifneq (${org},)
 
 fasta = ${ASM_GENOMES_DIR}/${org}.fa
 twoBit = ${ASM_GENOMES_DIR}/${org}.2bit
+flatFasta = ${ASM_GENOMES_DIR}/${org}.fa.flat
 size = ${ASM_GENOMES_DIR}/${org}.chrom.sizes
 
-file: ${fasta} ${twoBit} ${size}
+file: ${fasta} ${twoBit} ${flatFasta} ${size}
 
-${fasta}:
+${fasta}: ${halFile}
 	@mkdir -p $(dir $@)
 	${HAL_BIN_DIR}/hal2fasta ${halFile} ${org} > $@.${tmpExt}
-	pyfasta flatten $@.${tmpExt}  # produce flat fasta for pyfasta module
 	mv -f $@.${tmpExt} $@
 
 ${twoBit}: ${fasta}
@@ -29,12 +29,18 @@ ${twoBit}: ${fasta}
 	faToTwoBit $< $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
-${size}: ${twoBit}
+${flatFasta}: ${fasta} ${twoBit}
+	pyfasta flatten $<
+	# need to make the timestamps correct now
+	touch ${twoBit}
+	touch $@
+
+${size}:
 	@mkdir -p $(dir $@)
-	twoBitInfo $< $@.${tmpExt}
+	${HAL_BIN_DIR}/halStats --chromSizes ${org} ${halFile} > $@.${tmpExt}
 	mv -f $@.${tmpExt} $@
 
 cleanfiles:
-	rm -rf ${fasta} ${twoBit} ${size}
+	rm -rf ${fasta}* ${twoBit} ${size}
 
 endif

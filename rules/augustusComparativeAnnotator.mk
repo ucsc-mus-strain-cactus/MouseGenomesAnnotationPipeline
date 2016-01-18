@@ -79,8 +79,8 @@ sortedGp = ${inputDir}/${mapTargetOrg}.sorted.gp
 inputGp = ${inputDir}/${mapTargetOrg}.final.gp
 
 outputDir = ${AUGUSTUS_TMR_DIR}
-outputGtf = ${outputDir}/${mapTargetOrg}.output.gtf
-outputGp = ${outputDir}/${mapTargetOrg}.output.gp
+outputGtf = ${outputDir}/${mapTargetOrg}.gtf
+outputGp = ${outputDir}/${mapTargetOrg}.gp
 outputBed12_8 = ${outputDir}/bed_12_8/${mapTargetOrg}.bed12-8
 outputBb = ${outputDir}/bigBed/${mapTargetOrg}.bb
 # outputBb is put in the comparative annotator bigBedfiles dir so it can be found by assemblyHub.mk
@@ -150,8 +150,8 @@ ${outputBed}: ${outputGp}
 
 ${augustusFa}: ${outputBed}
 	@mkdir -p $(dir $@)
-	fastaFromBed -fi ${targetFasta} -fo $@.${tmpExt} -bed $< -name -s -split
-	mv -f $@.${tmpExt} $@
+	fastaFromBed -fi ${targetFasta} -fo $@ -bed $< -name -s -split
+	pyfasta flatten $@
 
 ${augustusFaidx}: ${augustusFa}
 	@mkdir -p $(dir $@)

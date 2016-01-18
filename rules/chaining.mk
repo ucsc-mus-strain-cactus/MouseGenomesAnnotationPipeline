@@ -34,7 +34,7 @@ chain = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.chain.gz
 net = ${CHAINING_DIR}/${queryOrg}-${targetOrg}.net.gz
 
 chain:  ${chain}
-${chain}: ${halFile} ${queryTwoBit} ${targetTwoBit}
+${chain}: | ${halFile} ${queryTwoBit} ${targetTwoBit}
 	@mkdir -p $(dir ${chain}) ${jobTreeChainTmpDir}
 	 ./bin/ucscChainNet ${jobTreeChainingOpts} ${halFile} ${queryOrg} ${queryTwoBit} ${targetOrg} \
 	        ${targetTwoBit} ${chain} ${net} > ${jobTreeJobOutput} 2>&1
