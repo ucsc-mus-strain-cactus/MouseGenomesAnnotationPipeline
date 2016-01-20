@@ -46,7 +46,7 @@ transMapDataDir = ${TRANS_MAP_DIR}/transMap/${mapTargetOrg}
 targetGp = ${transMapDataDir}/transMap${augustusGencodeSet}.gp
 targetFasta = ${ASM_GENOMES_DIR}/${mapTargetOrg}.fa
 cgpGp = ${AUGUSTUS_CGP_DIR}/${mapTargetOrg}.gp
-consensusGp = ${comparativeAnnotationDir}/consensus/${mapTargetOrg}/protein_coding.consensus_gene_set.gp
+consensusGp = ${comparativeAnnotationDir}/consensus/${mapTargetOrg}/protein_coding.augustus_consensus_gene_set.gp
 intronBits = ${AUGUSTUS_CGP_INTRON_BITS_DIR}/${mapTargetOrg}.txt
 
 # output files

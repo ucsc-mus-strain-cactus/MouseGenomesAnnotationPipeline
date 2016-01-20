@@ -1,5 +1,5 @@
-include ../pipeline_msca/config.mk
-#include ../pipeline/config.mk
+#include ../pipeline_msca/config.mk
+include ../pipeline/config.mk
 
 # base directory definitions
 PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
@@ -96,12 +96,12 @@ AUGUSTUS_WORK_DIR = ${AUGUSTUS_DIR}/work
 # AugustusCGP
 ##
 AUGUSTUS_CGP_BASE_DIR = ${AUGUSTUS_DIR}/cgp
-AUGUSTUS_CGP_DIR = ${AUGUSTUS_CGP_BASE_DIR}/filteredCGP
+AUGUSTUS_CGP_DIR = ${AUGUSTUS_CGP_BASE_DIR}
 AUGUSTUS_CGP_INTRON_BITS_DIR = ${AUGUSTUS_CGP_DIR}/intronbits
 
 
 # comparative anotations types produced
-compAnnTypes = allClassifiers allAugustusClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors transMapGood augustusGood
+compAnnTypes = allClassifiers potentiallyInterestingBiology assemblyErrors alignmentErrors
 
 ###
 # chaining
