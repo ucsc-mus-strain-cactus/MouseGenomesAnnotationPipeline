@@ -1,0 +1,6 @@
+[submodule "progressiveCactus"]
+	path = progressiveCactus
+	url = https://github.com/glennhickey/progressiveCactus/
+[submodule "comparativeAnnotator"]
+	path = comparativeAnnotator
+	url = https://github.com/ucsc-mus-strain-cactus/comparativeAnnotator.git
