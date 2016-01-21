@@ -2,10 +2,8 @@ import luigi
 import sys
 import os
 import subprocess
-import tempfile
 import shutil
-sys.path.append('comparativeAnnotator/lib')
-from general_lib import mkdir_p
+from common_functions import TemporaryFilePath
 
 
 class GenomeFileConfiguration(object):
@@ -28,11 +26,11 @@ class RunGenomeFiles(luigi.WrapperTask):
 
     def requires(self):
         for genome in self.params['genomes']:
-            cfg = GenomeFileConfiguration(self.params)
-            mkdir_p(cfg.target_dir)
-            yield GenomeFasta(cfg, cfg.genome_fasta)
-            yield GenomeTwoBit(cfg, cfg.genome_two_bit)
-            yield GenomeSizes(cfg, cfg.chrom_sizes)
+            cfg = GenomeFileConfiguration(self.params, genome)
+            yield GenomeFasta(cfg=cfg, target_file=cfg.genome_fasta)
+            yield GenomeTwoBit(cfg=cfg, target_file=cfg.genome_two_bit)
+            yield GenomeSizes(cfg=cfg, target_file=cfg.chrom_sizes)
+            yield GenomeFlatFasta(cfg=cfg, target_file=cfg.flat_fasta)
 
 
 class HalFile(luigi.ExternalTask):
@@ -49,27 +47,31 @@ class AbstractGenomeFile(luigi.Task):
     def output(self):
         return luigi.LocalTarget(self.target_file)
 
+    def move_output_to_destination(self, outf_path):
+        self.output().makedirs()
+        shutil.move(outf_path, self.output().path)
+
 
 class GenomeFasta(AbstractGenomeFile):
     def requires(self):
         return HalFile(self.cfg.hal_file)
 
     def run(self):
-        with tempfile.TemporaryFile() as outf:
-            cmd = ['hal2fasta', self.cfg.hal_file, self.cfg.genome, '--outFaPath', outf]
+        with TemporaryFilePath() as outf_path:
+            cmd = ['hal2fasta', self.cfg.hal_file, self.cfg.genome, '--outFaPath', outf_path]
             subprocess.call(cmd)
-            shutil.move(outf, self.output())
+            self.move_output_to_destination(outf_path)
 
 
 class GenomeTwoBit(AbstractGenomeFile):
     def requires(self):
-        return GenomeFasta(self.cfg)
+        return GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta)
 
     def run(self):
-        with tempfile.TemporaryFile() as outf:
-            cmd = ['faToTwoBit', self.cfg.genome_fasta, outf]
+        with TemporaryFilePath() as outf_path:
+            cmd = ['faToTwoBit', self.cfg.genome_fasta, outf_path]
             subprocess.call(cmd)
-            shutil.move(outf, self.output())
+            self.move_output_to_destination(outf_path)
 
 
 class GenomeSizes(AbstractGenomeFile):
@@ -77,7 +79,18 @@ class GenomeSizes(AbstractGenomeFile):
         return HalFile(self.cfg.hal_file)
 
     def run(self):
-        with tempfile.TemporaryFile() as outf:
-            cmd = ['halStats', '--chromSizes', self.cfg.genome, self.cfg.hal_file, outf]
-            subprocess.call(cmd)
-            shutil.move(outf, self.output())
+        with TemporaryFilePath() as outf_path:
+            with open(outf_path, 'w') as outf:
+                cmd = ['halStats', '--chromSizes', self.cfg.genome, self.cfg.hal_file]
+                subprocess.call(cmd, stdout=outf)
+                self.move_output_to_destination(outf_path)
+
+
+class GenomeFlatFasta(AbstractGenomeFile):
+    def requires(self):
+        return (GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta), 
+                GenomeTwoBit(cfg=self.cfg, target_file=self.cfg.genome_two_bit))
+
+    def run(self):
+        cmd = ['pyfasta', 'flatten', self.cfg.genome_fasta]
+        subprocess.call(cmd)

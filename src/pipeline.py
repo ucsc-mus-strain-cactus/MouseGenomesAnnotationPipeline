@@ -13,7 +13,7 @@ class RunPipeline(luigi.WrapperTask):
 
     def requires(self):
         for genome in self.params['genomes']:
-            RunGenomeFiles(self.params)
+            yield RunGenomeFiles(self.params)
 
 
 def parse_args():
@@ -21,7 +21,7 @@ def parse_args():
     Build argparse object
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('config', help='Config file', required=True)
+    parser.add_argument('config', help='Config file')
     return parser.parse_args()
 
 
@@ -55,7 +55,7 @@ def extract_newick_genomes_cactus(cactus_config):
     """
     f_h = open(cactus_config)
     newick = f_h.next().rstrip()
-    genomes = [x.split()[0] for x in f_h]
+    genomes = tuple(x.split()[0] for x in f_h)
     return newick, genomes
 
 
@@ -88,4 +88,4 @@ def parse_config(cfg_file):
 if __name__ == '__main__':
     args = parse_args()
     config = parse_config(args.config)
-    luigi.run(main_task_cls=RunPipeline(config))
+    luigi.build([RunPipeline(config)], local_scheduler=True)
