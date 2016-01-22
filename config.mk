@@ -6,7 +6,7 @@
 ####################################################################################################
 
 
-VERSION = 1509
+VERSION = 1504
 
 # source organism information (reference mouse)
 srcOrg = C57B6J
@@ -14,7 +14,7 @@ srcOrgHgDb = mm10
 
 # this lists all assembly version we wish to keep live in the browser
 # the last one is the default
-LIVE_VERSIONS = 1509
+LIVE_VERSIONS = 1504 1509
 
 ifeq (${VERSION},1509)
 mappedOrgs = C57BL_6NJ NZO_HlLtJ 129S1_SvImJ FVB_NJ NOD_ShiLtJ LP_J A_J AKR_J BALB_cJ DBA_2J C3H_HeJ CBA_J WSB_EiJ CAST_EiJ PWK_PhJ SPRET_EiJ CAROLI_EiJ Pahari_EiJ
