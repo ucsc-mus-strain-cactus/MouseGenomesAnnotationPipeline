@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+"""
+Takes as input a HAL file and a set of target genomes and produces a pruned phylogenetic tree
+"""
+
+import os
+import subprocess
+import argparse
+from ete3 import Tree
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("hal")
+    parser.add_argument("genomes")
+    args = parser.parse_args()
+    tree_str = subprocess.Popen(["halStats", args.hal, "--tree"], stdout=subprocess.PIPE).communicate()[0]
+    tree = Tree(tree_str, format=1)
+    genomes = args.genomes.split(",")
+    tree.prune(genomes, preserve_branch_length=True)
+    print tree.write()
+
+
+if __name__ == "__main__":
+    main()

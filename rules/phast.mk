@@ -17,10 +17,12 @@ make_commas = $(subst $(eval) ,${comma},$1)
 ifneq (${targetGenomes},)
 targetGenomeStr = --targetGenomes ${targetGenomes}
 outputDirBase = $(call make_dots,${targetGenomes})
+tree = --tree "$(shell bin/extractHalTreeSubset ${halFile} ${targetGenomes})"
 else
 targetGenomeCommas = $(call make_commas,${mappedOrgs})
 outputDirBase = $(call make_dots,${targetGenomeCommas})
 targetGenomeStr = 
+tree = 
 endif
 
 PHAST_ANALYSIS_DIR=${DATA_DIR}/comparative/${VERSION}/phastAnalysis/${outputDirBase}
@@ -49,7 +51,7 @@ ${outputDlessGff}: ${modFile}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeDlessTmpDir}
 	cd ../comparativeAnnotator && ${python} phast/dless.py ${halFile} ${srcOrg} $< $@.${tmpExt} ${jobTreeOpts} \
-	--jobTree ${jobTreeDlessJobDir} &>  ${jobTreeDlessJobOutput}
+	--jobTree ${jobTreeDlessJobDir} &> ${jobTreeDlessJobOutput}
 	mv -f $@.${tmpExt} $@
 
 
@@ -66,5 +68,5 @@ ${4dSitesBed}: ${cleanedCdsBed}
 ${modFile}: ${4dSitesBed}
 	@mkdir -p $(dir $@)
 	cd ../comparativeAnnotator && ${python} hal/phyloP/halPhyloPTrain.py --numProc 6 --noAncestors \
-	--no4d ${targetGenomeStr} ${halFile} ${srcOrg} ${4dSitesBed} $@.${tmpExt}.mod --error ${errorFile}
+	--no4d ${halFile} ${srcOrg} ${4dSitesBed} $@.${tmpExt}.mod --error ${errorFile} ${targetGenomeStr} ${tree}
 	mv -f $@.${tmpExt}.mod $@
