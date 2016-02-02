@@ -16,7 +16,7 @@ make_commas = $(subst $(eval) ,${comma},$1)
 # if targetGenomes is defined on the command line, format it for dless
 ifneq (${targetGenomes},)
 targetGenomeStr = --targetGenomes ${targetGenomes}
-outputDirBase = (call make_dots,${targetGenomes})
+outputDirBase = $(call make_dots,${targetGenomes})
 else
 targetGenomeCommas = $(call make_commas,${mappedOrgs})
 outputDirBase = $(call make_dots,${targetGenomeCommas})
@@ -48,7 +48,8 @@ dless: ${outputDlessGff}
 ${outputDlessGff}: ${modFile}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeDlessTmpDir}
-	cd ../comparativeAnnotator && ${python} phast/dless.py ${halFile} ${srcOrg} $< $@.${tmpExt} ${jobTreeOpts} --jobTree ${jobTreeDlessJobDir} &>  ${jobTreeDlessJobOutput}
+	cd ../comparativeAnnotator && ${python} phast/dless.py ${halFile} ${srcOrg} $< $@.${tmpExt} ${jobTreeOpts} \
+	--jobTree ${jobTreeDlessJobDir} &>  ${jobTreeDlessJobOutput}
 	mv -f $@.${tmpExt} $@
 
 
