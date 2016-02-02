@@ -35,7 +35,6 @@ wigDir=${PHAST_ANALYSIS_DIR}/phyloPWigs
 jobTreeDlessTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/dless
 jobTreeDlessJobOutput = ${jobTreeDlessTmpDir}/dless.out
 jobTreeDlessJobDir = ${jobTreeDlessTmpDir}/jobTree
-comparativeAnnotationDone = ${doneFlagDir}/dless.done
 
 
 all: phyloP dless
@@ -49,7 +48,7 @@ dless: ${outputDlessGff}
 ${outputDlessGff}: ${modFile}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeDlessTmpDir}
-	cd ../comparativeAnnotator && ${python} phast/dless.py ${halFile} ${srcOrg} $< $@.${tmpExt} ${jobTreeOpts} 
+	cd ../comparativeAnnotator && ${python} phast/dless.py ${halFile} ${srcOrg} $< $@.${tmpExt} ${jobTreeOpts} --jobTree ${jobTreeDlessJobDir} &>  ${jobTreeDlessJobOutput}
 	mv -f $@.${tmpExt} $@
 
 
