@@ -4,7 +4,7 @@ In a library until import issue is fixed in toil.
 This avoids running targets if file exists (FIXME: doesn't check date).
 """
 import os
-from musstrain.hal import *
+from hal import *
 from pycbio.sys import fileOps
 from pycbio.sys import procOps
 from jobTree.scriptTree.target import Target
@@ -45,6 +45,7 @@ def pipelineCompress(cmds, outFile):
     if isinstance(cmds[0], str):
         cmds = [cmds]
     outFileTmp = fileOps.atomicTmpFile(outFile)
+    fileOps.ensureFileDir(outFileTmp)
     procOps.runProc(cmds + [[getCompressCmd(outFile)]], stdout=outFileTmp)
     fileOps.atomicInstall(outFileTmp, outFile)
         
@@ -63,7 +64,8 @@ def chainChromMakeChildren(target, hal, queryGenome, queryTwoBit, targetGenome, 
     for queryChrom in queryChromSizes.iterkeys():
         chromChain = getGlobalTempPath(target, queryGenome, queryChrom, targetGenome, "chain")
         chromChainFiles.append(chromChain)
-        target.addChildTargetFn(chainChromTarget, (hal, queryGenome, queryChromSizes[queryChrom], queryTwoBit, queryChrom, targetGenome, targetTwoBit, chromChain))
+        target.addChildTargetFn(chainChromTarget, (hal, queryGenome, queryChromSizes[queryChrom], queryTwoBit, queryChrom, targetGenome, targetTwoBit, chromChain),
+                                memory=16 * 1024 ** 3)
     return chromChainFiles
     
 def chainConcatTarget(target, chromChainFiles, chainFile):
@@ -87,32 +89,23 @@ def netTarget(target, queryTwoBit, targetTwoBit, chainFile, netFile):
                      ["chainNet", "-minSpace=1", "/dev/stdin", targetChromSizesFile, queryChromSizesFile, "/dev/stdout", "/dev/null"],
                      ["netSyntenic", "/dev/stdin", "/dev/stdout"]],
                      netFile)
-
-def synChainNetTarget(target, chainFile, netFile, synChainFile, synNetFile):
-    "create syntenic filtered chains used by transmap, output is atomic"
-    # filter nets
-    pipelineCompress(["netFilter", "-syn", netFile], synNetFile)
-    # get chains matching nets, but don't split chains
-    pipelineCompress(["netChainSubset", "-wholeChains", synNetFile, chainFile, "/dev/stdout"],
-                     synChainFile)
     
-def netsTarget(target, queryTwoBit, targetTwoBit, chainFile, netFile, synChainFile, synNetFile):
-    "make nets and optional syntenic filtered chains"
+def netsTarget(target, queryTwoBit, targetTwoBit, chainFile, netFile):
+    "make nets"
     if not os.path.exists(netFile):
-        target.addChildTargetFn(netTarget, (queryTwoBit, targetTwoBit, chainFile, netFile))
-    if (synChainFile != None) and not (os.path.exists(synChainFile) and os.path.exists(synNetFile)):
-        target.setFollowOnTargetFn(synChainNetTarget, (chainFile, netFile, synChainFile, synNetFile))
+        target.addChildTargetFn(netTarget, (queryTwoBit, targetTwoBit, chainFile, netFile), memory=16 * 1024 ** 3)
     
-def chainNetTarget(target, hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit, chainFile, netFile, synChainFile, synNetFile):
+def chainNetTarget(target, hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit, chainFile, netFile):
     "main entry point that does chain and then netting"
     if not os.path.exists(chainFile):
         target.addChildTargetFn(chainTarget, (hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit, chainFile))
-    target.setFollowOnTargetFn(netsTarget, (queryTwoBit, targetTwoBit, chainFile, netFile, synChainFile, synNetFile))
+    target.setFollowOnTargetFn(netsTarget, (queryTwoBit, targetTwoBit, chainFile, netFile))
 
 def chainNetStartup(opts):
     "entry to start jobtree"
     # FIXME: should generate an exception
-    target = Target.makeTargetFn(chainNetTarget, (opts.hal, opts.queryGenome, opts.queryTwoBit, opts.targetGenome, opts.targetTwoBit, opts.chainFile, opts.netFile, opts.synChainFile, opts.synNetFile))
+    target = Target.makeTargetFn(chainNetTarget, (opts.hal, opts.queryGenome, opts.queryTwoBit, opts.targetGenome, 
+                                                  opts.targetTwoBit, opts.chainFile, opts.netFile))
     failures = Stack(target).startJobTree(opts)
     if failures != 0:
         raise Exception("Error: " + str(failures) + " jobs failed")

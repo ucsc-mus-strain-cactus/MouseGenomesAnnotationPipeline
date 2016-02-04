@@ -9,7 +9,7 @@ sys.path.insert(0, "/hive/groups/recon/local/pycbio/lib")
 # use jobTree in comparativeAnnotator module for now
 myBinDir = os.path.abspath(os.path.normpath(os.path.dirname(sys.argv[0])))
 sys.path.insert(0, myBinDir+ "/../../comparativeAnnotator")
-sys.path.insert(0, myBinDir+ "/../lib")
+sys.path.insert(0, myBinDir+ "./lib")
 from optparse import OptionParser
 from jobTree.scriptTree.stack import Stack
 from musstrain import ucscChainNet
