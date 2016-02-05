@@ -15,7 +15,6 @@ import subprocess
 from pycbio.sys.procOps import runProc, callProc
 from pycbio.sys.fileOps import ensureDir, rmTree
 from lib.ucsc_chain_net import chainNetStartup
-from lib.jobtree_luigi import make_jobtree_dir
 from lib.parsing import HashableNamespace
 
 
@@ -100,5 +99,8 @@ class AbstractJobTreeTask(luigi.Task):
         """
         jobTree wants the parent directory for a given jobTree to exist, but not the directory itself.
         """
-        rmTree(jobtree_path)
+        try:
+            rmTree(jobtree_path)
+        except OSError:
+            pass
         ensureDir(os.path.dirname(jobtree_path))

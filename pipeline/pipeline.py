@@ -1,104 +1,304 @@
-#!/usr/bin/env python
+"""
+Run the pipeline
+"""
+import luigi
 import sys
 import os
-import luigi
-import ete3
+import itertools
+import subprocess
 import argparse
-# need to set environ also in order for it to be passed on to jobTree
-os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio'
-sys.path.extend(['./', './submodules', './submodules/pycbio'])
-from genome_files import RunGenomeFiles, RunAnnotationFiles
-from chaining import RunChainingFiles
-from transmap import RunTransMap
-from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
-from jobTree.scriptTree.stack import Stack
+from pycbio.sys.procOps import runProc, callProc
+from pycbio.sys.fileOps import ensureDir
+from lib.ucsc_chain_net import chainNetStartup
+#from lib.comparative_annotator import comparativeAnnotatorStartup TODO: do it this way
+from lib.parsing import HashableNamespace
+from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask
+from comparativeAnnotator.comparativeAnnotator import start_pipeline
 
 
-class RunPipeline(luigi.WrapperTask):
+########################################################################################################################
+########################################################################################################################
+## Genome Files
+########################################################################################################################
+########################################################################################################################
+
+
+class GenomeFiles(luigi.WrapperTask):
     """
-    Pipeline starts here.
+    WrapperTask to produce all input genome files for all genomes.
     """
-    params = luigi.Parameter()
+    cfg = luigi.Parameter()
 
     def requires(self):
-        for genome in self.params.genomes:
-            yield RunGenomeFiles(self.params)
-            yield RunAnnotationFiles(self.params)
-            yield RunChainingFiles(self.params)
-            yield RunTransMap(self.params)
+        for genome_cfg in [self.cfg.target_genome_files, self.cfg.query_genome_files]:
+            yield GenomeFasta(cfg=genome_cfg, target_file=genome_cfg.genome_fasta)
+            yield GenomeTwoBit(cfg=genome_cfg, target_file=genome_cfg.genome_two_bit)
+            yield GenomeSizes(cfg=genome_cfg, target_file=genome_cfg.chrom_sizes)
+            yield GenomeFlatFasta(cfg=genome_cfg, target_file=genome_cfg.flat_fasta)
 
 
-def parse_args():
+class GenomeFasta(AbstractAtomicFileTask):
     """
-    Build argparse object, parse arguments. See the parsing library for a lot of the features used here.
+    Produce a fasta file from a hal file. Requires hal2fasta.
     """
-    parser = FileArgumentParser(description=__doc__)
-    parser.add_argument('--geneSets', action=NamespaceAction, required=True, metavar='KEY=VALUE',
-                        help='Input gene sets. Expects groups of four key-value pairs in the format --geneSets '
-                             'geneSet=Ensembl sourceGenome=C_elegans genePred=testdata/c_elegans.transcripts.gp '
-                             'attributes=testdata/ce11.ensembl.attributes.tsv')
-    parser.add_argument_with_mkdir_p('--workDir', default='work', metavar='DIR',
-                                     help='Work directory. Will contain intermediate files that may be useful.')
-    parser.add_argument_with_mkdir_p('--outputDir', default='output', metavar='DIR', help='Output directory.')
-    parser.add_argument_with_check('--hal', required=True, metavar='FILE',
-                                   help='HAL alignment file produced by progressiveCactus')
-    parser.add_argument_with_check('--cactusConfig', required=True, metavar='FILE',
-                                   help='progressiveCactus configuration file used to generate the HAL alignment file.')
-    parser.add_argument('--localCores', default=8, metavar='INT',
-                        help='Number of local cores to use. (default: %(default)d)')
-    jobtree = parser.add_argument_group('jobTree options. Read the jobTree documentation for other options not shown')
-    jobtree.add_argument('--batchSystem', default='parasol', help='jobTree batch system.')
-    jobtree.add_argument('--parasolCommand', default='./bin/remparasol',
-                         help='Parasol command used by jobTree. Used to remap to host node.')
-    jobtree_parser = argparse.ArgumentParser(add_help=False)
-    Stack.addJobTreeOptions(jobtree_parser)
-    args = parser.parse_args(namespace=HashableNamespace())
-    args.jobTreeOptions = jobtree_parser.parse_known_args(namespace=HashableNamespace())[0]
-    # modify args to have newick string and list of all genomes
-    newick_str, genomes = extract_newick_genomes_cactus(args.cactusConfig)
-    args.genomes = genomes
-    args.tree = newick_str
-    # make hashable
-    args.geneSets = tuple(args.geneSets)
-    # add genome order to each source gene set
-    for gene_set in args.geneSets:
-        gene_set.orderedTargetGenomes = build_genome_order(newick_str, gene_set.sourceGenome)
-    # set directory that jobTrees will be made in
-    args.jobTreeDir = os.path.join(args.workDir, 'jobTrees')
-    # if batchSystem/parasolCommand are not supplied on the command line, they will be the jobTree defaults. Fix this.
-    args.jobTreeOptions.batchSystem = args.batchSystem
-    args.jobTreeOptions.parasolCommand = args.parasolCommand
-    # make the default jobTree dir None so that it crashes if I am stupid
-    args.jobTreeOptions.jobTree = None
-    # manually check that all geneSet files exist because my fancy FileArgumentParser can't do this
-    for geneSet in args.geneSets:
-        assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(args.geneSet.genePred)
-        assert os.path.exists(geneSet.attributes), 'Error: attributes file {} missing.'.format(args.geneSet.attributes)
-    return args
+    def run(self):
+        cmd = ['hal2fasta', self.cfg.hal, self.cfg.genome]
+        self.run_cmd(cmd)
 
 
-def build_genome_order(newick_str, ref_genome):
+class GenomeTwoBit(AbstractAtomicFileTask):
     """
-    Takes a newick format string and a single genome and reports the genetic distance of each genome in the tree
-    from the reference genome. Used to order plots from closest to furthest from the source genome.
+    Produce a 2bit file from a fasta file. Requires kent tool faToTwoBit.
     """
-    t = ete3.Tree(newick_str)
-    distances = [[t.get_distance(ref_genome, x), x.name] for x in t if x.name != ref_genome]
-    ordered = sorted(distances, key=lambda (dist, name): dist)
-    distances, ordered_names = zip(*ordered)
-    return ordered_names
+    def requires(self):
+        return GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta)
+
+    def run(self):
+        cmd = ['faToTwoBit', self.cfg.genome_fasta, '/dev/stdout']
+        self.run_cmd(cmd)
 
 
-def extract_newick_genomes_cactus(cactus_config):
+class GenomeSizes(AbstractAtomicFileTask):
     """
-    Parse the cactus config file, extracting just the newick tree
+    Produces a genome chromosome sizes file. Requires halStats.
     """
-    f_h = open(cactus_config)
-    newick = f_h.next().rstrip()
-    genomes = tuple(x.split()[0] for x in f_h)
-    return newick, genomes
+    def run(self):
+        cmd = ['halStats', '--chromSizes', self.cfg.genome, self.cfg.hal]
+        self.run_cmd(cmd)
 
 
-if __name__ == '__main__':
-    args = parse_args()
-    luigi.build([RunPipeline(args)], local_scheduler=True, workers=args.localCores)
+class GenomeFlatFasta(AbstractAtomicFileTask):
+    """
+    Flattens a genome fasta in-place using pyfasta. Requires the pyfasta package.
+    """
+    def requires(self):
+        return (GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta), 
+                GenomeTwoBit(cfg=self.cfg, target_file=self.cfg.genome_two_bit))
+
+    def run(self):
+        cmd = ['pyfasta', 'flatten', self.cfg.genome_fasta]
+        runProc(cmd)
+
+
+########################################################################################################################
+########################################################################################################################
+## Annotation Files
+########################################################################################################################
+########################################################################################################################
+
+
+class AnnotationFiles(luigi.WrapperTask):
+    """
+    WrapperTask for all annotation file commands.
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        annot_files = self.cfg.annot_files
+        yield GenePred(cfg=annot_files, target_file=annot_files.gp)
+        yield Attributes(cfg=annot_files, target_file=annot_files.attributes)
+        yield TranscriptFasta(cfg=annot_files, target_file=annot_files.transcript_fasta, 
+                              genome_cfg=self.cfg.query_genome_files)
+        yield TranscriptBed(cfg=annot_files, target_file=annot_files.bed)
+        yield FakePsl(cfg=annot_files, target_files=(annot_files.psl, annot_files.cds),
+                      genome_cfg=self.cfg.query_genome_files)
+
+
+class GenePred(AbstractAtomicFileTask):
+    """
+    Copies the source genePred to the same directory as all the other annotation input files will be generated.
+    """
+    def run(self):
+        self.atomic_install(luigi.LocalTarget(self.cfg.genePred), force_copy=True)
+
+
+class Attributes(AbstractAtomicFileTask):
+    """
+    Copies the source attributes.tsv to the same directory as all the other annotation input files will be generated.
+    """
+    def run(self):
+        self.atomic_install(luigi.LocalTarget(self.cfg.attributesTsv), force_copy=True)
+
+
+class TranscriptBed(AbstractAtomicFileTask):
+    """
+    Produces a BED record from the input genePred annotation. Makes use of Kent tool genePredToBed
+    """
+    def requires(self):
+        return GenePred(cfg=self.cfg, target_file=self.cfg.gp)
+
+    def run(self):
+        cmd = ['genePredToBed', self.requires().output().path, '/dev/stdout']
+        self.run_cmd(cmd)
+
+
+class TranscriptFasta(AbstractAtomicFileTask):
+    """
+    Produces a fasta for each transcript. Requires bedtools.
+    """
+    genome_cfg = luigi.Parameter()
+
+    def requires(self):
+        return (TranscriptBed(cfg=self.cfg, target_file=self.cfg.bed),
+                GenomeFasta(cfg=self.cfg, target_file=self.genome_cfg.genome_fasta))
+
+    def run(self):
+        bed_target, genome_fasta = self.requires()
+        bed_target_path = bed_target.output().path
+        genome_fasta_target_path = genome_fasta.output().path
+        cmd = ['bedtools', 'getfasta', '-fi', genome_fasta_target_path, '-bed', bed_target_path, '-fo', '/dev/stdout',
+               '-name', '-split', '-s']
+        self.run_cmd(cmd)
+
+
+class FakePsl(AbstractAtomicManyFileTask):
+    """
+    Produces a fake PSL mapping transcripts to the genome, using the Kent tool genePredToFakePsl
+    """
+    genome_cfg = luigi.Parameter()
+
+    def requires(self):
+        return (GenePred(cfg=self.cfg, target_file=self.cfg.gp),
+                GenomeSizes(cfg=self.genome_cfg, target_file=self.genome_cfg.chrom_sizes))
+
+    def run(self):
+        tmp_psl = luigi.LocalTarget(is_tmp=True)
+        tmp_cds = luigi.LocalTarget(is_tmp=True)
+        tmp_files = (tmp_psl, tmp_cds)
+        cmd = ['genePredToFakePsl', '-chromSize={}'.format(self.genome_cfg.chrom_sizes), 'noDB', 
+               self.cfg.gp, tmp_psl.path, tmp_cds.path]
+        self.run_cmd(cmd, tmp_files)
+
+
+########################################################################################################################
+########################################################################################################################
+## Chaining Files
+########################################################################################################################
+########################################################################################################################
+
+
+class ChainFiles(AbstractJobTreeTask):
+    """
+    Interfaces with jobTree to make Kent chains over the HAL alignment.
+    """
+    cfg = luigi.Parameter()
+
+    def output(self):
+        return (luigi.LocalTarget(self.cfg.chaining.chainFile), luigi.LocalTarget(self.cfg.chaining.netFile))
+    
+    def requires(self):
+        return (GenomeTwoBit(cfg=self.cfg.target_genome_files, target_file=self.cfg.target_genome_files.genome_two_bit), 
+                GenomeTwoBit(cfg=self.cfg.query_genome_files, target_file=self.cfg.query_genome_files.genome_two_bit))
+
+    def run(self):
+        ensureDir(self.cfg.chaining.out_dir)
+        self.make_jobtree_dir(self.cfg.chaining.jobTree)
+        chainNetStartup(self.cfg.chaining)
+
+
+########################################################################################################################
+########################################################################################################################
+## transMap
+########################################################################################################################
+########################################################################################################################
+
+
+class TransMap(luigi.WrapperTask):
+    """
+    WrapperTask for all transMap commands.
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        yield TransMapPsl(cfg=self.cfg, target_file=self.cfg.transmap.psl)
+        yield TransMapGp(cfg=self.cfg, target_file=self.cfg.transmap.gp)
+
+
+class TransMapPsl(AbstractAtomicFileTask):
+    """
+    Runs transMap.
+    """
+    def requires(self):
+        return ChainFiles(self.cfg), AnnotationFiles(self.cfg)
+
+    def run(self):
+        psl_cmd = ['pslMap', '-chainMapFile', self.cfg.annot_files.psl, 
+                    self.cfg.chaining.chainFile, '/dev/stdout']
+        post_chain_cmd = ['bin/postTransMapChain', '/dev/stdin', '/dev/stdout']
+        sort_cmd = ['sort', '-k', '14,14', '-k', '16,16n']
+        recalc_cmd = ['pslRecalcMatch', '/dev/stdin', self.cfg.chaining.targetTwoBit, 
+                      self.cfg.annot_files.transcript_fasta, 'stdout']
+        uniq_cmd = ['bin/pslQueryUniq']
+        cmd_list = [psl_cmd, post_chain_cmd, sort_cmd, recalc_cmd, uniq_cmd]
+        self.run_cmd(cmd_list)
+
+
+class TransMapGp(AbstractAtomicFileTask):
+    """
+    Produces the final transMapped genePred
+    """
+    def requires(self):
+        return TransMapPsl(cfg=self.cfg, target_file=self.cfg.transmap.psl)
+
+    def run(self):
+        cmd = ['mrnaToGene', '-keepInvalid', '-quiet', '-genePredExt', '-ignoreUniqSuffix', '-insertMergeSize=0',
+               '-cdsFile={}'.format(self.cfg.annot_files.cds), self.cfg.annot_files.psl, '/dev/stdout']
+        self.run_cmd(cmd)
+
+
+
+########################################################################################################################
+########################################################################################################################
+## comparativeAnnotator
+########################################################################################################################
+########################################################################################################################
+
+
+class RunComparativeAnnotator(luigi.WrapperTask):
+    """
+    WrapperTask for all comparativeAnnotator commands.
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        yield ReferenceComparativeAnnotator(self.cfg)
+        yield ComparativeAnnotator(self.cfg)
+
+
+class ReferenceComparativeAnnotator(AbstractJobTreeTask):
+    """
+    Runs transMap.
+    """
+    def output(self):
+        return luigi.LocalTarget(self.cfg.comp_ann.reference.done)
+
+    def requires(self):
+        return GenomeFiles(self.cfg), AnnotationFiles(self.cfg)
+
+    def run(self):
+        self.make_jobtree_dir(self.cfg.comp_ann.reference.jobTree)
+        # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
+        test = argparse.Namespace()
+        test.__dict__.update(vars(self.cfg.comp_ann.reference))
+        start_pipeline(test)
+        f_h = luigi.LocalTarget(self.cfg.comp_ann.reference.done).open('w')
+        f_h.close()
+
+
+class ComparativeAnnotator(AbstractJobTreeTask):
+    """
+    Runs comparativeAnnotator.
+    TODO: total re-write of comparative annotator to avoid using a done file.
+    """
+    def output(self):
+        return luigi.LocalTarget(self.cfg.comp_ann.transmap.done)
+
+    def requires(self):
+        return (ReferenceComparativeAnnotator(self.cfg), TransMap(self.cfg), GenomeFiles(self.cfg),
+                AnnotationFiles(self.cfg))
+
+    def run(self):
+        self.make_jobtree_dir(self.cfg.comp_ann.transmap.jobTree)
+        start_pipeline(self.cfg.comp_ann.transmap)
+        f_h = luigi.LocalTarget(self.cfg.comp_ann.transmap.done).open('w')
+        f_h.close()
