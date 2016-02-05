@@ -262,7 +262,7 @@ class RunComparativeAnnotator(luigi.WrapperTask):
 
     def requires(self):
         yield ReferenceComparativeAnnotator(self.cfg)
-        yield ComparativeAnnotator(self.cfg)
+        #yield ComparativeAnnotator(self.cfg)
 
 
 class ReferenceComparativeAnnotator(AbstractJobTreeTask):
