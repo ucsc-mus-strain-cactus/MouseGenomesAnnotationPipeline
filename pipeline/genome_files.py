@@ -119,7 +119,7 @@ class AnnotationFileConfiguration(HashableNamespace):
         base_source_dir = os.path.join(args.workDir, 'annotation_files', self.sourceGenome, self.geneSet)
         base_gene_set = os.path.splitext(os.path.basename(self.genePred))[0]
         base_out_path = os.path.join(base_source_dir, base_gene_set)
-        self.genepred_copy = base_out_path + '.gp'  # genePred will be copied to this directory too for simplicity
+        self.transcript_genepred = base_out_path + '.gp'  # genePred will be copied to this directory too for simplicity
         self.transcript_bed = base_out_path + '.bed'
         self.transcript_fasta = base_out_path + '.fa'
         self.flat_transcript_fasta = self.transcript_fasta + '.flat'
@@ -139,7 +139,7 @@ class RunAnnotationFiles(luigi.WrapperTask):
     def requires(self):
         for GeneSetNamespace in self.args.geneSets:
             cfg = AnnotationFileConfiguration(self.args, GeneSetNamespace)
-            yield GenePred(cfg=cfg, target_file=cfg.genepred_copy)
+            yield GenePred(cfg=cfg, target_file=cfg.transcript_genepred)
             yield TranscriptFasta(cfg=cfg, target_file=cfg.transcript_fasta)
             yield TranscriptBed(cfg=cfg, target_file=cfg.transcript_bed)
             yield FakePsl(cfg=cfg, target_files=(cfg.fake_psl, cfg.fake_psl_cds))
@@ -158,7 +158,7 @@ class TranscriptBed(AbstractAtomicFileTask):
     Produces a BED record from the input genePred annotation. Makes use of Kent tool genePredToBed
     """
     def requires(self):
-        return GenePred(cfg=self.cfg, target_file=self.cfg.genepred_copy)
+        return GenePred(cfg=self.cfg, target_file=self.cfg.transcript_genepred)
 
     def run(self):
         cmd = ['genePredToBed', self.requires().output().path, '/dev/stdout']
@@ -188,13 +188,13 @@ class FakePsl(AbstractAtomicManyFileTask):
     """
 
     def requires(self):
-        return GenePred(cfg=self.cfg, target_file=self.cfg.genepred_copy)
+        return GenePred(cfg=self.cfg, target_file=self.cfg.transcript_genepred)
 
     def run(self):
         tmp_fake_psl = luigi.LocalTarget(is_tmp=True)
         tmp_fake_cds = luigi.LocalTarget(is_tmp=True)
         tmp_files = (tmp_fake_psl, tmp_fake_cds)
-        cmd = ['genePredToFakePsl', '-chromSize={}'.format(self.cfg.genome_sizes), 'noDB', self.cfg.genepred_copy,
+        cmd = ['genePredToFakePsl', '-chromSize={}'.format(self.cfg.genome_sizes), 'noDB', self.cfg.transcript_genepred,
                tmp_fake_psl.path, tmp_fake_cds.path]
         self.run_cmd(cmd, tmp_files)
 

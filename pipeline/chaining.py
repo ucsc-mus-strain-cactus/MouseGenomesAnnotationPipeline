@@ -7,12 +7,13 @@ import os
 import itertools
 import subprocess
 from pycbio.sys.procOps import runProc, callProc
-from pycbio.sys.fileOps import ensureDir
+from pycbio.sys.fileOps import ensureDir, rmTree
 from lib.ucsc_chain_net import chainNetStartup
 from lib.jobtree_luigi import make_jobtree_dir
 from lib.parsing import HashableNamespace
 from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask
-from genome_files import GenomeFileConfiguration
+# import all other targets so they can build the tree
+import genome_files
 
 
 ########################################################################################################################
@@ -37,8 +38,8 @@ class ChainingFileConfiguration(HashableNamespace):
         self.chainFile = os.path.join(self.base_source_dir, '{}_{}.chain.gz'.format(query_genome, target_genome))
         self.netFile = os.path.join(self.base_source_dir, '{}_{}.net.gz'.format(query_genome, target_genome))
         self.jobTree = os.path.join(args.jobTreeDir, 'chaining', '{}_{}'.format(query_genome, target_genome))
-        self.query_file_cfg = GenomeFileConfiguration(args, query_genome)
-        self.target_file_cfg = GenomeFileConfiguration(args, target_genome)
+        self.query_file_cfg = genome_files.GenomeFileConfiguration(args, query_genome)
+        self.target_file_cfg = genome_files.GenomeFileConfiguration(args, target_genome)
         self.queryTwoBit = self.query_file_cfg.genome_two_bit
         self.targetTwoBit = self.target_file_cfg.genome_two_bit
 
@@ -60,22 +61,19 @@ class RunChainingFiles(luigi.WrapperTask):
                     yield ChainGenomes(cfg=chaining_cfg)
 
 
-class ChainGenomes(luigi.Task):
+class ChainGenomes(AbstractJobTreeTask):
     """
-    Interfaces
+    Interfaces with jobTree and does chaining.
     """
-    cfg = luigi.Parameter()
-
     def output(self):
         return (luigi.LocalTarget(self.cfg.chainFile), luigi.LocalTarget(self.cfg.netFile))
     
     def requires(self):
-        return (GenomeTwoBit(cfg=self.cfg.target_file_cfg, target_file=self.cfg.targetTwoBit), 
-                GenomeTwoBit(cfg=self.cfg.query_file_cfg, target_file=self.cfg.queryTwoBit))
+        return (genome_files.GenomeTwoBit(cfg=self.cfg.target_file_cfg, target_file=self.cfg.targetTwoBit), 
+                genome_files.GenomeTwoBit(cfg=self.cfg.query_file_cfg, target_file=self.cfg.queryTwoBit))
 
     def run(self):
+        # make sure jobTree has a clean starting directory
         ensureDir(self.cfg.base_source_dir)
         make_jobtree_dir(self.cfg.jobTree)
         chainNetStartup(self.cfg)
-
-

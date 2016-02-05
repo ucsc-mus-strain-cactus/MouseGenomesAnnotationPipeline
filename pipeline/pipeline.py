@@ -4,10 +4,12 @@ import os
 import luigi
 import ete3
 import argparse
+# need to set environ also in order for it to be passed on to jobTree
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio'
 sys.path.extend(['./', './submodules', './submodules/pycbio'])
 from genome_files import RunGenomeFiles, RunAnnotationFiles
 from chaining import RunChainingFiles
+from transmap import RunTransMap
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
 
@@ -23,6 +25,7 @@ class RunPipeline(luigi.WrapperTask):
             yield RunGenomeFiles(self.params)
             yield RunAnnotationFiles(self.params)
             yield RunChainingFiles(self.params)
+            yield RunTransMap(self.params)
 
 
 def parse_args():
@@ -41,7 +44,7 @@ def parse_args():
                                    help='HAL alignment file produced by progressiveCactus')
     parser.add_argument_with_check('--cactusConfig', required=True, metavar='FILE',
                                    help='progressiveCactus configuration file used to generate the HAL alignment file.')
-    parser.add_argument('--localCores', default=4, metavar='INT',
+    parser.add_argument('--localCores', default=8, metavar='INT',
                         help='Number of local cores to use. (default: %(default)d)')
     jobtree = parser.add_argument_group('jobTree options. Read the jobTree documentation for other options not shown')
     jobtree.add_argument('--batchSystem', default='parasol', help='jobTree batch system.')
@@ -61,7 +64,7 @@ def parse_args():
     for gene_set in args.geneSets:
         gene_set.orderedTargetGenomes = build_genome_order(newick_str, gene_set.sourceGenome)
     # set directory that jobTrees will be made in
-    args.jobTreeDir = os.path.join(args.workDir, '.jobTrees')
+    args.jobTreeDir = os.path.join(args.workDir, 'jobTrees')
     # if batchSystem/parasolCommand are not supplied on the command line, they will be the jobTree defaults. Fix this.
     args.jobTreeOptions.batchSystem = args.batchSystem
     args.jobTreeOptions.parasolCommand = args.parasolCommand

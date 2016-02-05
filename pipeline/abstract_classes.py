@@ -13,7 +13,7 @@ import os
 import itertools
 import subprocess
 from pycbio.sys.procOps import runProc, callProc
-from pycbio.sys.fileOps import ensureDir
+from pycbio.sys.fileOps import ensureDir, rmTree
 from lib.ucsc_chain_net import chainNetStartup
 from lib.jobtree_luigi import make_jobtree_dir
 from lib.parsing import HashableNamespace
@@ -79,7 +79,7 @@ class AbstractAtomicManyFileTask(luigi.Task):
         These files will be atomically installed using functionality in luigi.localTarget
         Assumes that tmp_files are in the same order as in target_files.
         """
-        callProc(cmd)
+        runProc(cmd)
         for tmp_f, f in zip(*(tmp_files, self.output())):
             f.makedirs()
             source_dir = os.path.dirname(os.path.abspath(tmp_f.path))
@@ -88,3 +88,17 @@ class AbstractAtomicManyFileTask(luigi.Task):
                 tmp_f.copy(f.path)
             else:
                 tmp_f.move(f.path)
+
+
+class AbstractJobTreeTask(luigi.Task):
+    """
+    Used for tasks that interface with jobTree.
+    """
+    cfg = luigi.Parameter()
+
+    def make_jobtree_dir(self, jobtree_path):
+        """
+        jobTree wants the parent directory for a given jobTree to exist, but not the directory itself.
+        """
+        rmTree(jobtree_path)
+        ensureDir(os.path.dirname(jobtree_path))
