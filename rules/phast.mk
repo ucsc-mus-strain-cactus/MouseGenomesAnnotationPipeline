@@ -28,18 +28,26 @@ endif
 PHAST_ANALYSIS_DIR=${DATA_DIR}/comparative/${VERSION}/phastAnalysis/${outputDirBase}
 dlessOutDir = ${PHAST_ANALYSIS_DIR}/dless
 outputDlessGff = ${dlessOutDir}/dless.gff
+phastConsOutDir = ${PHAST_ANALYSIS_DIR}/phastCons
+phastConsBed = ${phastConsOutDir}/phastCons.bed
+phastConsWig = ${phastConsOutDir}/phastCons.wig
 modFile=${PHAST_ANALYSIS_DIR}/rates.mod
 errorFile=${PHAST_ANALYSIS_DIR}/rates.err
 4dSitesBed=${PHAST_ANALYSIS_DIR}/4d_no_conserved.bed
 wigDir=${PHAST_ANALYSIS_DIR}/phyloPWigs
+refFasta = ${ASM_GENOMES_DIR}/${srcOrg}.fa
 
 # jobTree for dless
-jobTreeDlessTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/dless
+jobTreeDlessTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/dless/${outputDirBase}
 jobTreeDlessJobOutput = ${jobTreeDlessTmpDir}/dless.out
 jobTreeDlessJobDir = ${jobTreeDlessTmpDir}/jobTree
 
+# jobTree for phastCons
+jobTreePhastConsTmpDir = $(shell pwd -P)/${jobTreeRootTmpDir}/phastCons/${outputDirBase}
+jobTreePhastConsJobOutput = ${jobTreePhastConsTmpDir}/phastCons.out
+jobTreePhastConsJobDir = ${jobTreePhastConsTmpDir}/jobTree
 
-all: phyloP dless
+all: phyloP dless phastCons
 
 phyloP: ${modFile}
 	@mkdir -p ${wigDir}
@@ -50,9 +58,18 @@ dless: ${outputDlessGff}
 ${outputDlessGff}: ${modFile}
 	@mkdir -p $(dir $@)
 	@mkdir -p ${jobTreeDlessTmpDir}
-	cd ../comparativeAnnotator && ${python} phast/dless.py ${halFile} ${srcOrg} $< $@.${tmpExt} ${jobTreeOpts} \
-	--jobTree ${jobTreeDlessJobDir} &> ${jobTreeDlessJobOutput}
+	cd ../comparativeAnnotator && ${python} phast/dless.py ${halFile} ${srcOrg} $< $@.${tmpExt} --ref-fasta-path ${refFasta} \
+	${jobTreeOpts} --jobTree ${jobTreeDlessJobDir} &> ${jobTreeDlessJobOutput}
 	mv -f $@.${tmpExt} $@
+
+phastCons: ${phastConsBed}
+
+# this is ugly, but hacks to have 2 files made by 1 target seemed uglier. We may lose the wiggle.
+${phastConsBed}: ${modFile}
+	@mkdir -p $(dir $@)
+	@mkdir -p ${jobTreePhastConsTmpDir}
+	cd ../comparativeAnnotator && ${python} phast/phastcons.py ${halFile} ${srcOrg} $< $@ ${phastConsWig} --ref-fasta-path ${refFasta} \
+	${jobTreeOpts} --jobTree ${jobTreePhastConsJobDir} &> ${jobTreePhastConsJobOutput}
 
 
 # --conserved option will ensure that the 4d sites are actually 4d

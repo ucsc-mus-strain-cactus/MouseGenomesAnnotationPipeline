@@ -1,5 +1,5 @@
-include ../pipeline_msca/config.mk
-#include ../pipeline/config.mk
+#include ../pipeline_msca/config.mk
+include ../pipeline/config.mk
 
 # base directory definitions
 PROJ_DIR = /hive/groups/recon/projs/mus_strain_cactus
@@ -157,6 +157,6 @@ jobTreeRootTmpDir = jobTree.tmp/${VERSION}
 batchSystem = parasol
 maxThreads = 40
 defaultMemory = 8589934592
-maxJobDuration = 28800
+maxJobDuration = 88800
 jobTreeOpts = --defaultMemory ${defaultMemory} --batchSystem ${batchSystem} --parasolCommand $(shell pwd -P)/bin/remparasol \
               --maxJobDuration ${maxJobDuration} --maxThreads ${maxThreads} --stats
