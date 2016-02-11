@@ -1,15 +1,15 @@
-[submodule "progressiveCactus"]
+[submodule "submodules/progressiveCactus"]
 	path = submodules/progressiveCactus
 	url = https://github.com/glennhickey/progressiveCactus/
-[submodule "comparativeAnnotator"]
+[submodule "submodules/comparativeAnnotator"]
 	path = submodules/comparativeAnnotator
-	url = https://github.com/ucsc-mus-strain-cactus/comparativeAnnotator.git
-[submodule "pycbio"]
+	url = https://github.com/ucsc-mus-strain-cactus/comparativeAnnotator
+[submodule "submodules/pycbio"]
 	path = submodules/pycbio
-	url = https://github.com/diekhans/pycbio.git
-[submodule "jobTree"]
+	url = https://github.com/ifiddes/pycbio
+[submodule "submodules/jobTree"]
 	path = submodules/jobTree
-	url = https://github.com/benedictpaten/jobTree.git
+	url = https://github.com/benedictpaten/jobTree
 [submodule "submodules/sonLib"]
 	path = submodules/sonLib
 	url = https://github.com/benedictpaten/sonLib
