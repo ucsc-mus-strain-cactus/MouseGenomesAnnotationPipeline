@@ -1,12 +1,12 @@
 [submodule "submodules/sonLib"]
 	path = submodules/sonLib
 	url = https://github.com/benedictpaten/sonLib
-[submodule "progressiveCactus"]
-	path = submodules/progressiveCactus
-	url = https://github.com/glennhickey/progressiveCactus
-[submodule "jobTree"]
+[submodule "submodules/jobTree"]
 	path = submodules/jobTree
 	url = https://github.com/benedictpaten/jobTree
-[submodule "pycbio"]
+[submodule "submodules/progressiveCactus"]
+	path = submodules/progressiveCactus
+	url = https://github.com/glennhickey/progressiveCactus
+[submodule "submodules/pycbio"]
 	path = submodules/pycbio
 	url = https://github.com/ifiddes/pycbio
