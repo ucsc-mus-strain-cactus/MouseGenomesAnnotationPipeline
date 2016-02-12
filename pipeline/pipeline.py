@@ -13,7 +13,7 @@ from lib.ucsc_chain_net import chainNetStartup
 #from lib.comparative_annotator import comparativeAnnotatorStartup TODO: do it this way
 from lib.parsing import HashableNamespace
 from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask
-from comparativeAnnotator.comparativeAnnotator import start_pipeline
+from comparativeAnnotator import start_pipeline
 
 
 ########################################################################################################################

@@ -10,3 +10,6 @@
 [submodule "submodules/pycbio"]
 	path = submodules/pycbio
 	url = https://github.com/ifiddes/pycbio
+[submodule "submodules/comparativeAnnotator"]
+	path = submodules/comparativeAnnotator
+	url = https://github.com/ucsc-mus-strain-cactus/comparativeAnnotator.git

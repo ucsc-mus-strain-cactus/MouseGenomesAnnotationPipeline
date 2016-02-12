@@ -4,10 +4,10 @@ import os
 import luigi
 import ete3
 import argparse
-import itertools
 # need to set environ also in order for it to be passed on to jobTree
-os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
-sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
+# TODO: this should be in some sort of sourceme.bash file.
+os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio'
+sys.path.extend(['./', './submodules', './submodules/pycbio'])
 from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, RunComparativeAnnotator
 from config import Configuration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
@@ -23,7 +23,10 @@ class RunPipeline(luigi.WrapperTask):
     def requires(self):
         cfgs = []
         for gene_set in self.params.geneSets:
-            for target_genome in self.params.genomes:
+            # in cases where the user specifies a subset of target genomes, re-add the source genome to the set.
+            target_genomes = set(self.params.targetGenomes)
+            target_genomes.add(gene_set.sourceGenome)
+            for target_genome in target_genomes:
                 cfg = Configuration(self.params, gene_set.sourceGenome, target_genome, gene_set)
                 cfgs.append(cfg)
                 yield GenomeFiles(cfg)
@@ -32,8 +35,6 @@ class RunPipeline(luigi.WrapperTask):
                 yield TransMap(cfg)
                 yield RunComparativeAnnotator(cfg)
 
-
-##### TODO: you need target genomes so people can choose to only annotate a subset of the hal
 ##### TODO: need to error check that all geneSets variables are correct
 
 def parse_args():
@@ -45,6 +46,9 @@ def parse_args():
                         help='Input gene sets. Expects groups of four key-value pairs in the format --geneSets '
                              'geneSet=Ensembl sourceGenome=C_elegans genePred=testdata/c_elegans.transcripts.gp '
                              'attributesTsv=testdata/ce11.ensembl.attributes.tsv')
+    parser.add_argument('--targetGenomes', default=None, nargs='+',
+                        help='Space-separated list of genomes you wish to annotate. '
+                             'If not set, all non-reference genomes will be annotated.')
     parser.add_argument_with_mkdir_p('--workDir', default='work', metavar='DIR',
                                      help='Work directory. Will contain intermediate files that may be useful.')
     parser.add_argument_with_mkdir_p('--outputDir', default='output', metavar='DIR', help='Output directory.')
@@ -67,6 +71,8 @@ def parse_args():
     # modify args to have newick string and list of all genomes
     newick_str, genomes = extract_newick_genomes_cactus(args.cactusConfig)
     args.genomes = genomes
+    if args.targetGenomes is None:
+        args.targetGenomes = genomes
     args.tree = newick_str
     # make hashable
     args.geneSets = tuple(args.geneSets)
