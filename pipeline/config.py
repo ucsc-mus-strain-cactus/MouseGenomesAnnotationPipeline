@@ -116,16 +116,16 @@ class CompAnnReference(HashableNamespace):
     """
     def __init__(self, args, query_genome_files, annot_files, out_dir, gene_set):
         self.__dict__.update(vars(args.jobTreeOptions)) 
-        self.outDir = out_dir
-        self.refGenome = query_genome_files.genome
-        self.refFasta = query_genome_files.genome_fasta
+        self.out_dir = out_dir
+        self.ref_genome = query_genome_files.genome
+        self.ref_fasta = query_genome_files.genome_fasta
         self.sizes = query_genome_files.chrom_sizes
-        self.annotationGp = annot_files.gp
-        self.gencodeAttributes = annot_files.attributes
+        self.annotation_gp = annot_files.gp
+        self.gencode_attributes = annot_files.attributes
         self.mode = 'reference'
-        self.done = os.path.join(out_dir, self.refGenome + '_DONE')
+        self.db = os.path.join(out_dir, 'classifications.db')
         self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet, 
-                                    self.refGenome)
+                                    self.ref_genome)
 
 
 class CompAnnTransMap(CompAnnReference):
@@ -136,10 +136,9 @@ class CompAnnTransMap(CompAnnReference):
         super(CompAnnTransMap, self).__init__(args, query_genome_files, annot_files, out_dir, gene_set)
         self.genome = target_genome_files.genome
         self.psl = transmap.psl
-        self.refPsl = annot_files.psl
-        self.targetGp = transmap.gp
+        self.target_gp = transmap.gp
         self.fasta = target_genome_files.genome_fasta
         self.mode = 'transMap'
-        self.done = os.path.join(out_dir, self.genome + '_DONE')
+        self.db = os.path.join(out_dir, 'classifications.db')
         self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet, 
                                     self.genome)

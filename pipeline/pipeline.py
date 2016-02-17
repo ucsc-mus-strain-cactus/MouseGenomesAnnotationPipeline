@@ -288,7 +288,7 @@ class ReferenceComparativeAnnotator(AbstractJobTreeTask):
 class ComparativeAnnotator(AbstractJobTreeTask):
     """
     Runs comparativeAnnotator.
-    TODO: total re-write of comparative annotator to avoid using a done file.
+    TODO: this should be done per-genome, re-write config to make one config object per target genome
     """
     def output(self):
         return luigi.LocalTarget(self.cfg.comp_ann.transmap.done)
