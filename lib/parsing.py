@@ -3,7 +3,6 @@ Library of parsing things related to argparse.
 """
 
 import argparse
-import sys
 import os
 import errno
 

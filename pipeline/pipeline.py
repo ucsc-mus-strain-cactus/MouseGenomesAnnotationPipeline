@@ -6,7 +6,7 @@ from pycbio.sys.procOps import runProc
 from pycbio.sys.fileOps import ensureDir
 from pycbio.bio.psl import get_alignment_dict
 from lib.ucsc_chain_net import chainNetStartup
-from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask, VerifyTableTask
+from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask, VerifyTablesTask
 from comparativeAnnotator.annotation_pipeline import comp_ann_driver
 
 ########################################################################################################################
@@ -271,7 +271,7 @@ class RunComparativeAnnotator(luigi.WrapperTask):
         #yield ComparativeAnnotator(self.cfg)
 
 
-class ReferenceComparativeAnnotator(VerifyTableTask):
+class ReferenceComparativeAnnotator(VerifyTablesTask):
     """
     Runs transMap.
     """
