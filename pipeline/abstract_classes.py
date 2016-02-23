@@ -8,14 +8,11 @@ Main set of classes for comparativeAnnotator pipeline. Broken down into the cate
 5. metrics
 """
 import luigi
-import sys
 import os
-import itertools
-import subprocess
-from pycbio.sys.procOps import runProc, callProc
+import pandas as pd
+from pycbio.sys.procOps import runProc
 from pycbio.sys.fileOps import ensureDir, rmTree
-from lib.ucsc_chain_net import chainNetStartup
-from lib.parsing import HashableNamespace
+from pycbio.sys.sqliteOps import get_query_ids, open_database
 
 
 ########################################################################################################################
@@ -104,3 +101,34 @@ class AbstractJobTreeTask(luigi.Task):
         except OSError:
             pass
         ensureDir(os.path.dirname(jobtree_path))
+
+
+class RowsSqlTarget(luigi.Target):
+    """
+    This target checks that the provided column contains all of the values in row_vals.
+    Generally used to ensure that every primary key we expect to see exists.
+    Adapted from https://gist.github.com/a-campbell/75a2feaebbcecbe99ba1
+    """
+    def __init__(self, db_path, table, key_col, row_vals):
+        self.db_path = db_path
+        self.table = table
+        self.key_col = key_col
+        self.row_vals = row_vals
+
+    def exists(self):
+        query = 'SELECT {} FROM {}'.format(self.key_col, self.table)
+        con, cur = open_database(self.db_path)
+        data = get_query_ids(cur, query)
+        return len(set(data) & set(self.row_vals)) == len(self.row_vals)
+
+
+class VerifyTablesTask(luigi.Task):
+    """
+    An abstract task for verifying that SQL tables contains all rows expected.
+    Expects a table map in the form {table: [column, values]} as well as a db_path.
+    """
+    def output(self):
+        r = []
+        for table, (column, row_vals) in self.table_map.iteritems():
+            r.append(RowsSqlTarget(self.db_path, table, column, row_vals))
+        return r

@@ -2,19 +2,12 @@
 Run the pipeline
 """
 import luigi
-import sys
-import os
-import itertools
-import subprocess
-import argparse
-from pycbio.sys.procOps import runProc, callProc
+from pycbio.sys.procOps import runProc
 from pycbio.sys.fileOps import ensureDir
+from pycbio.bio.psl import get_alignment_dict
 from lib.ucsc_chain_net import chainNetStartup
-#from lib.comparative_annotator import comparativeAnnotatorStartup TODO: do it this way
-from lib.parsing import HashableNamespace
-from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask
-from comparativeAnnotator import start_pipeline
-
+from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask, VerifyTableTask
+from comparativeAnnotator.annotation_pipeline import comp_ann_driver
 
 ########################################################################################################################
 ########################################################################################################################
@@ -184,7 +177,7 @@ class ChainFiles(AbstractJobTreeTask):
     cfg = luigi.Parameter()
 
     def output(self):
-        return (luigi.LocalTarget(self.cfg.chaining.chainFile), luigi.LocalTarget(self.cfg.chaining.netFile))
+        return luigi.LocalTarget(self.cfg.chaining.chainFile), luigi.LocalTarget(self.cfg.chaining.netFile)
     
     def requires(self):
         return (GenomeTwoBit(cfg=self.cfg.target_genome_files, target_file=self.cfg.target_genome_files.genome_two_bit), 
@@ -260,17 +253,31 @@ class RunComparativeAnnotator(luigi.WrapperTask):
     """
     cfg = luigi.Parameter()
 
+    def construct_table_map(self, genome, psl_path, key_col):
+        rows = set(get_alignment_dict(psl_path).iterkeys())
+        r = {}
+        for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']:
+            r[table] = [key_col, rows]
+        return r
+
     def requires(self):
-        yield ReferenceComparativeAnnotator(self.cfg)
+        ref_table_map = self.construct_table_map(self.cfg.comp_ann.reference.ref_genome,
+                                                 self.cfg.comp_ann.reference.ref_psl,
+                                                 'TranscriptId')
+        yield ReferenceComparativeAnnotator(self.cfg, ref_table_map, self.cfg.comp_ann.reference.db)
+        #tgt_table_map = self.construct_table_map(self.cfg.comp_ann.transmap.genome,
+        #                                         self.cfg.comp_ann.transmap.psl,
+        #                                         'AlignmentId')
         #yield ComparativeAnnotator(self.cfg)
 
 
-class ReferenceComparativeAnnotator(AbstractJobTreeTask):
+class ReferenceComparativeAnnotator(VerifyTableTask):
     """
     Runs transMap.
     """
-    def output(self):
-        return luigi.LocalTarget(self.cfg.comp_ann.reference.done)
+    cfg = luigi.Parameter()
+    table_map = luigi.Parameter()
+    db_path = luigi.Parameter()
 
     def requires(self):
         return GenomeFiles(self.cfg), AnnotationFiles(self.cfg)
@@ -278,11 +285,9 @@ class ReferenceComparativeAnnotator(AbstractJobTreeTask):
     def run(self):
         self.make_jobtree_dir(self.cfg.comp_ann.reference.jobTree)
         # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
-        test = argparse.Namespace()
-        test.__dict__.update(vars(self.cfg.comp_ann.reference))
-        start_pipeline(test)
-        f_h = luigi.LocalTarget(self.cfg.comp_ann.reference.done).open('w')
-        f_h.close()
+        #test = argparse.Namespace()
+        #test.__dict__.update(vars(self.cfg.comp_ann.reference))
+        comp_ann_driver(self.cfg.comp_ann.reference)
 
 
 class ComparativeAnnotator(AbstractJobTreeTask):
@@ -299,6 +304,6 @@ class ComparativeAnnotator(AbstractJobTreeTask):
 
     def run(self):
         self.make_jobtree_dir(self.cfg.comp_ann.transmap.jobTree)
-        start_pipeline(self.cfg.comp_ann.transmap)
+        comp_ann_driver(self.cfg.comp_ann.transmap)
         f_h = luigi.LocalTarget(self.cfg.comp_ann.transmap.done).open('w')
         f_h.close()

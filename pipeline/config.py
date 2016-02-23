@@ -119,6 +119,7 @@ class CompAnnReference(HashableNamespace):
         self.out_dir = out_dir
         self.ref_genome = query_genome_files.genome
         self.ref_fasta = query_genome_files.genome_fasta
+        self.ref_psl = annot_files.psl
         self.sizes = query_genome_files.chrom_sizes
         self.annotation_gp = annot_files.gp
         self.gencode_attributes = annot_files.attributes
@@ -136,6 +137,7 @@ class CompAnnTransMap(CompAnnReference):
         super(CompAnnTransMap, self).__init__(args, query_genome_files, annot_files, out_dir, gene_set)
         self.genome = target_genome_files.genome
         self.psl = transmap.psl
+        self.ref_psl = annot_files.psl
         self.target_gp = transmap.gp
         self.fasta = target_genome_files.genome_fasta
         self.mode = 'transMap'

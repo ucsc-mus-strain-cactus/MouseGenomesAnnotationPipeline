@@ -6,8 +6,8 @@ import ete3
 import argparse
 # need to set environ also in order for it to be passed on to jobTree
 # TODO: this should be in some sort of sourceme.bash file.
-os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio'
-sys.path.extend(['./', './submodules', './submodules/pycbio'])
+os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
+sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
 from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, RunComparativeAnnotator
 from config import Configuration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
@@ -35,11 +35,11 @@ class RunPipeline(luigi.WrapperTask):
                 yield TransMap(cfg)
                 yield RunComparativeAnnotator(cfg)
 
-##### TODO: need to error check that all geneSets variables are correct
 
 def parse_args():
     """
     Build argparse object, parse arguments. See the parsing library for a lot of the features used here.
+    TODO: need to error check that all geneSets variables are correct
     """
     parser = FileArgumentParser(description=__doc__)
     parser.add_argument('--geneSets', action=NamespaceAction, required=True, metavar='KEY=VALUE',
