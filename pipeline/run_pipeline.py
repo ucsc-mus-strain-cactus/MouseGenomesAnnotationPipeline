@@ -88,8 +88,8 @@ def parse_args():
     args.jobTreeOptions.jobTree = None
     # manually check that all geneSet files exist because my fancy FileArgumentParser can't do this
     for geneSet in args.geneSets:
-        assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(args.geneSet.genePred)
-        assert os.path.exists(geneSet.attributesTsv), 'Error: attributes file {} missing.'.format(args.geneSet.attributesTsv)
+        assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(geneSet.genePred)
+        assert os.path.exists(geneSet.attributesTsv), 'Error: attributes file {} missing.'.format(geneSet.attributesTsv)
     return args
 
 

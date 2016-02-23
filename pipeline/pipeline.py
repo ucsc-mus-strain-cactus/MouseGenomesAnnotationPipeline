@@ -1,13 +1,14 @@
 """
 Run the pipeline
 """
+import argparse
 import luigi
 from pycbio.sys.procOps import runProc
-from pycbio.sys.fileOps import ensureDir
-from pycbio.bio.psl import get_alignment_dict
+from pycbio.sys.fileOps import ensureDir, iterRows
 from lib.ucsc_chain_net import chainNetStartup
-from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask, VerifyTablesTask
-from comparativeAnnotator.annotation_pipeline import comp_ann_driver
+from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask
+from abstract_classes import RowsSqlTarget
+from comparativeAnnotator.annotation_pipeline import main as comp_ann_main
 
 ########################################################################################################################
 ########################################################################################################################
@@ -65,7 +66,7 @@ class GenomeFlatFasta(AbstractAtomicFileTask):
     Flattens a genome fasta in-place using pyfasta. Requires the pyfasta package.
     """
     def requires(self):
-        return (GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta), 
+        return (GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta),
                 GenomeTwoBit(cfg=self.cfg, target_file=self.cfg.genome_two_bit))
 
     def run(self):
@@ -90,7 +91,7 @@ class AnnotationFiles(luigi.WrapperTask):
         annot_files = self.cfg.annot_files
         yield GenePred(cfg=annot_files, target_file=annot_files.gp)
         yield Attributes(cfg=annot_files, target_file=annot_files.attributes)
-        yield TranscriptFasta(cfg=annot_files, target_file=annot_files.transcript_fasta, 
+        yield TranscriptFasta(cfg=annot_files, target_file=annot_files.transcript_fasta,
                               genome_cfg=self.cfg.query_genome_files)
         yield TranscriptBed(cfg=annot_files, target_file=annot_files.bed)
         yield FakePsl(cfg=annot_files, target_files=(annot_files.psl, annot_files.cds),
@@ -158,7 +159,7 @@ class FakePsl(AbstractAtomicManyFileTask):
         tmp_psl = luigi.LocalTarget(is_tmp=True)
         tmp_cds = luigi.LocalTarget(is_tmp=True)
         tmp_files = (tmp_psl, tmp_cds)
-        cmd = ['genePredToFakePsl', '-chromSize={}'.format(self.genome_cfg.chrom_sizes), 'noDB', 
+        cmd = ['genePredToFakePsl', '-chromSize={}'.format(self.genome_cfg.chrom_sizes), 'noDB',
                self.cfg.gp, tmp_psl.path, tmp_cds.path]
         self.run_cmd(cmd, tmp_files)
 
@@ -178,9 +179,9 @@ class ChainFiles(AbstractJobTreeTask):
 
     def output(self):
         return luigi.LocalTarget(self.cfg.chaining.chainFile), luigi.LocalTarget(self.cfg.chaining.netFile)
-    
+
     def requires(self):
-        return (GenomeTwoBit(cfg=self.cfg.target_genome_files, target_file=self.cfg.target_genome_files.genome_two_bit), 
+        return (GenomeTwoBit(cfg=self.cfg.target_genome_files, target_file=self.cfg.target_genome_files.genome_two_bit),
                 GenomeTwoBit(cfg=self.cfg.query_genome_files, target_file=self.cfg.query_genome_files.genome_two_bit))
 
     def run(self):
@@ -215,11 +216,11 @@ class TransMapPsl(AbstractAtomicFileTask):
         return ChainFiles(self.cfg), AnnotationFiles(self.cfg)
 
     def run(self):
-        psl_cmd = ['pslMap', '-chainMapFile', self.cfg.annot_files.psl, 
+        psl_cmd = ['pslMap', '-chainMapFile', self.cfg.annot_files.psl,
                     self.cfg.chaining.chainFile, '/dev/stdout']
         post_chain_cmd = ['bin/postTransMapChain', '/dev/stdin', '/dev/stdout']
         sort_cmd = ['sort', '-k', '14,14', '-k', '16,16n']
-        recalc_cmd = ['pslRecalcMatch', '/dev/stdin', self.cfg.chaining.targetTwoBit, 
+        recalc_cmd = ['pslRecalcMatch', '/dev/stdin', self.cfg.chaining.targetTwoBit,
                       self.cfg.annot_files.transcript_fasta, 'stdout']
         uniq_cmd = ['bin/pslQueryUniq']
         cmd_list = [psl_cmd, post_chain_cmd, sort_cmd, recalc_cmd, uniq_cmd]
@@ -253,31 +254,28 @@ class RunComparativeAnnotator(luigi.WrapperTask):
     """
     cfg = luigi.Parameter()
 
-    def construct_table_map(self, genome, psl_path, key_col):
-        rows = set(get_alignment_dict(psl_path).iterkeys())
-        r = {}
-        for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']:
-            r[table] = [key_col, rows]
-        return r
-
     def requires(self):
-        ref_table_map = self.construct_table_map(self.cfg.comp_ann.reference.ref_genome,
-                                                 self.cfg.comp_ann.reference.ref_psl,
-                                                 'TranscriptId')
-        yield ReferenceComparativeAnnotator(self.cfg, ref_table_map, self.cfg.comp_ann.reference.db)
-        #tgt_table_map = self.construct_table_map(self.cfg.comp_ann.transmap.genome,
-        #                                         self.cfg.comp_ann.transmap.psl,
-        #                                         'AlignmentId')
+        yield ReferenceComparativeAnnotator(self.cfg)
         #yield ComparativeAnnotator(self.cfg)
 
 
-class ReferenceComparativeAnnotator(VerifyTablesTask):
+class ReferenceComparativeAnnotator(AbstractJobTreeTask):
     """
     Runs transMap.
     """
     cfg = luigi.Parameter()
-    table_map = luigi.Parameter()
-    db_path = luigi.Parameter()
+
+    def construct_table_map(self, genome, psl_path):
+        num_rows = len(list(iterRows(open(psl_path))))
+        return {table: num_rows for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']}
+
+    def output(self):
+        table_map = self.construct_table_map(self.cfg.comp_ann.reference.ref_genome,
+                                                 self.cfg.comp_ann.reference.ref_psl)
+        r = []
+        for table, num_rows in table_map.iteritems():
+            r.append(RowsSqlTarget(self.cfg.comp_ann.reference.db, table, num_rows))
+        return r
 
     def requires(self):
         return GenomeFiles(self.cfg), AnnotationFiles(self.cfg)
@@ -285,9 +283,9 @@ class ReferenceComparativeAnnotator(VerifyTablesTask):
     def run(self):
         self.make_jobtree_dir(self.cfg.comp_ann.reference.jobTree)
         # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
-        #test = argparse.Namespace()
-        #test.__dict__.update(vars(self.cfg.comp_ann.reference))
-        comp_ann_driver(self.cfg.comp_ann.reference)
+        tmp_cfg = argparse.Namespace()
+        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann.reference))
+        comp_ann_main(tmp_cfg)
 
 
 class ComparativeAnnotator(AbstractJobTreeTask):
@@ -304,6 +302,6 @@ class ComparativeAnnotator(AbstractJobTreeTask):
 
     def run(self):
         self.make_jobtree_dir(self.cfg.comp_ann.transmap.jobTree)
-        comp_ann_driver(self.cfg.comp_ann.transmap)
+        comp_ann_main(self.cfg.comp_ann.transmap)
         f_h = luigi.LocalTarget(self.cfg.comp_ann.transmap.done).open('w')
         f_h.close()

@@ -14,7 +14,6 @@ from pycbio.sys.procOps import runProc
 from pycbio.sys.fileOps import ensureDir, rmTree
 from pycbio.sys.sqliteOps import get_query_ids, open_database
 
-
 ########################################################################################################################
 ########################################################################################################################
 ## Abstract classes and helper functions
@@ -36,7 +35,7 @@ class AbstractAtomicFileTask(luigi.Task):
         """
         Run a external command that will produce the output file for this task to stdout. Capture this to the file.
         """
-        out_h = self.output().open('w')  # luigi localTargets guarantee atomicity if used as a handle 
+        out_h = self.output().open('w')  # luigi localTargets guarantee atomicity if used as a handle
         runProc(cmd, stdout=out_h)
         out_h.close()
 
@@ -105,30 +104,18 @@ class AbstractJobTreeTask(luigi.Task):
 
 class RowsSqlTarget(luigi.Target):
     """
-    This target checks that the provided column contains all of the values in row_vals.
-    Generally used to ensure that every primary key we expect to see exists.
-    Adapted from https://gist.github.com/a-campbell/75a2feaebbcecbe99ba1
+    Checks that the table at db_path has num_rows rows.
     """
-    def __init__(self, db_path, table, key_col, row_vals):
+    def __init__(self, db_path, table, num_rows):
         self.db_path = db_path
         self.table = table
-        self.key_col = key_col
-        self.row_vals = row_vals
+        self.num_rows = num_rows
 
     def exists(self):
-        query = 'SELECT {} FROM {}'.format(self.key_col, self.table)
         con, cur = open_database(self.db_path)
-        data = get_query_ids(cur, query)
-        return len(set(data) & set(self.row_vals)) == len(self.row_vals)
-
-
-class VerifyTablesTask(luigi.Task):
-    """
-    An abstract task for verifying that SQL tables contains all rows expected.
-    Expects a table map in the form {table: [column, values]} as well as a db_path.
-    """
-    def output(self):
-        r = []
-        for table, (column, row_vals) in self.table_map.iteritems():
-            r.append(RowsSqlTarget(self.db_path, table, column, row_vals))
-        return r
+        # first check if table exists
+        query = 'SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'.format(self.table)
+        if len(cur.execute(query).fetchall()) != 1:
+            return False
+        query = 'SELECT Count(*) FROM {}'.format(self.table)
+        return len(cur.execute(query).fetchall()) == self.num_rows
