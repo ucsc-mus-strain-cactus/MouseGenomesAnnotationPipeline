@@ -10,16 +10,17 @@ Main set of classes for comparativeAnnotator pipeline. Broken down into the cate
 import luigi
 import os
 import pandas as pd
-from pycbio.sys.procOps import runProc
-from pycbio.sys.fileOps import ensureDir, rmTree
+from jobTree.src.jobTreeStatus import parseJobFiles
+from jobTree.src.master import getJobFileDirName
+from pycbio.sys.procOps import runProc, callProc
+from pycbio.sys.fileOps import ensureDir, rmTree, iterRows
 from pycbio.sys.sqliteOps import get_query_ids, open_database
 
 ########################################################################################################################
 ########################################################################################################################
-## Abstract classes and helper functions
+## Abstract Tasks
 ########################################################################################################################
 ########################################################################################################################
-
 
 class AbstractAtomicFileTask(luigi.Task):
     """
@@ -91,6 +92,20 @@ class AbstractJobTreeTask(luigi.Task):
     """
     cfg = luigi.Parameter()
 
+    def jobtree_is_finished(self, jobtree_path):
+        """
+        See if this jobTree has finished before.
+        """
+        childJobFileToParentJob, childCounts, updatedJobFiles, shellJobs = {}, {}, set(), set()
+        parseJobFiles(getJobFileDirName(jobtree_path), updatedJobFiles, childJobFileToParentJob, childCounts, shellJobs)
+        return len(updatedJobFiles) == 0
+
+    def restart_jobtree(self, args, entry_fn):
+        """
+        Restart an existing jobTree.
+        """
+        entry_fn(args)
+
     def make_jobtree_dir(self, jobtree_path):
         """
         jobTree wants the parent directory for a given jobTree to exist, but not the directory itself.
@@ -101,21 +116,54 @@ class AbstractJobTreeTask(luigi.Task):
             pass
         ensureDir(os.path.dirname(jobtree_path))
 
+    def start_jobtree(self, args, entry_fn, norestart=False):
+        """
+        Start a jobTree. Based on the flag norestart, will decide if we should attempt a restart.
+        """
+        jobtree_path = args.jobTree
+        if norestart is True or not os.path.exists(jobtree_path) or self.jobtree_is_finished(jobtree_path):
+            self.make_jobtree_dir(jobtree_path)
+            entry_fn(args)
+        else:  # try restarting the tree
+            try:
+                entry_fn(args)
+            except RuntimeError:  # try starting over
+                self.make_jobtree_dir(jobtree_path)
+                entry_fn(args)
+
+
+########################################################################################################################
+########################################################################################################################
+## Custom Targets
+########################################################################################################################
+########################################################################################################################
+
 
 class RowsSqlTarget(luigi.Target):
     """
     Checks that the table at db_path has num_rows rows.
     """
-    def __init__(self, db_path, table, num_rows):
+    def __init__(self, db_path, table, input_file):
         self.db_path = db_path
         self.table = table
-        self.num_rows = num_rows
+        self.input_file = input_file
+
+    def find_num_rows(self):
+        return len(list(iterRows(open(self.input_file))))
 
     def exists(self):
+        # input files may not have been created yet
+        if not os.path.exists(self.input_file):
+            return False
+        # database may have not been created yet
+        if not os.path.exists(self.db_path):
+            return False
         con, cur = open_database(self.db_path)
-        # first check if table exists
+        #check if table exists
         query = 'SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'.format(self.table)
         if len(cur.execute(query).fetchall()) != 1:
             return False
+        num_rows_in_file = self.find_num_rows()
         query = 'SELECT Count(*) FROM {}'.format(self.table)
-        return len(cur.execute(query).fetchall()) == self.num_rows
+        num_rows_in_table = cur.execute(query).fetchone()[0]
+        return num_rows_in_table == num_rows_in_file

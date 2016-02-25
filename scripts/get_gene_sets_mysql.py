@@ -24,7 +24,7 @@ def get_genes(database, name, out_dir):
 
 
 def build_attributes(database, name, out_dir):
-    header = '\t'.join(['geneId', 'geneName', 'geneType', 'transcriptId', 'transcriptType']) + '\n'
+    header = '\t'.join(['GeneId', 'GeneName', 'GeneType', 'TranscriptId', 'TranscriptType']) + '\n'
     source_cmd = ['hgsql', '-Ne', 'select * from ensemblSource', database]
     source = dict(x.split() for x in callProcLines(source_cmd))
     genes_cmd = ['hgsql', '-Ne', 'select * from ensemblToGeneName', database]

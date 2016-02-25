@@ -8,7 +8,7 @@ import argparse
 # TODO: this should be in some sort of sourceme.bash file.
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
-from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, RunComparativeAnnotator
+from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator, ComparativeAnnotator
 from config import Configuration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
@@ -31,9 +31,12 @@ class RunPipeline(luigi.WrapperTask):
                 cfgs.append(cfg)
                 yield GenomeFiles(cfg)
                 yield AnnotationFiles(cfg)
-                yield ChainFiles(cfg)
-                yield TransMap(cfg)
-                yield RunComparativeAnnotator(cfg)
+                if target_genome == gene_set.sourceGenome:
+                    yield ReferenceComparativeAnnotator(cfg)
+                else:
+                    yield ChainFiles(cfg)
+                    yield TransMap(cfg)
+                    #yield ComparativeAnnotator(cfg)
 
 
 def parse_args():
@@ -58,6 +61,8 @@ def parse_args():
                                    help='progressiveCactus configuration file used to generate the HAL alignment file.')
     parser.add_argument('--localCores', default=12, metavar='INT',
                         help='Number of local cores to use. (default: %(default)d)')
+    parser.add_argument('--norestart', action='store_true', default=False,
+                        help='Set to force jobtree pipeline components to start from the beginning instead of attempting a restart')
     jobtree = parser.add_argument_group('jobTree options. Read the jobTree documentation for other options not shown')
     jobtree.add_argument('--batchSystem', default='parasol', help='jobTree batch system.')
     jobtree.add_argument('--parasolCommand', default='./bin/remparasol',

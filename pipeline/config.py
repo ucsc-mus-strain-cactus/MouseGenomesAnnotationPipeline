@@ -18,13 +18,13 @@ class Configuration(HashableNamespace):
         self.target_genome_files = GenomeFileConfiguration(args, target_genome)
         self.query_genome_files = GenomeFileConfiguration(args, query_genome)
         self.annot_files = AnnotationFileConfiguration(args, gene_set)
-        self.chaining = ChainingFileConfiguration(args, target_genome, query_genome, 
-                                                  self.target_genome_files.genome_two_bit, 
+        self.chaining = ChainingFileConfiguration(args, target_genome, query_genome,
+                                                  self.target_genome_files.genome_two_bit,
                                                   self.query_genome_files.genome_two_bit)
         self.transmap = TransMapConfiguration(args, target_genome, query_genome,
-                                              self.target_genome_files.genome_two_bit, 
+                                              self.target_genome_files.genome_two_bit,
                                               self.query_genome_files.genome_two_bit, gene_set)
-        self.comp_ann = ComparativeAnnotatorConfiguration(args, self.gene_set, self.query_genome_files, 
+        self.comp_ann = ComparativeAnnotatorConfiguration(args, self.gene_set, self.query_genome_files,
                                                           self.target_genome_files, self.annot_files, self.transmap)
 
     def __repr__(self):
@@ -106,7 +106,7 @@ class ComparativeAnnotatorConfiguration(HashableNamespace):
         self.metrics_dir = os.path.join(args.outputDir, 'metrics')
         self.tx_set_dir = os.path.join(args.outputDir, 'tm_transcript_set')
         self.reference = CompAnnReference(args, query_genome_files, annot_files, self.work_dir, gene_set)
-        self.transmap = CompAnnTransMap(args, query_genome_files, target_genome_files, annot_files, transmap, 
+        self.transmap = CompAnnTransMap(args, query_genome_files, target_genome_files, annot_files, transmap,
                                         self.work_dir, gene_set)
 
 
@@ -115,7 +115,7 @@ class CompAnnReference(HashableNamespace):
     The args object that will be passed directly to jobTree
     """
     def __init__(self, args, query_genome_files, annot_files, out_dir, gene_set):
-        self.__dict__.update(vars(args.jobTreeOptions)) 
+        self.__dict__.update(vars(args.jobTreeOptions))
         self.out_dir = out_dir
         self.ref_genome = query_genome_files.genome
         self.ref_fasta = query_genome_files.genome_fasta
@@ -125,7 +125,7 @@ class CompAnnReference(HashableNamespace):
         self.gencode_attributes = annot_files.attributes
         self.mode = 'reference'
         self.db = os.path.join(out_dir, 'classifications.db')
-        self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet, 
+        self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
                                     self.ref_genome)
 
 
@@ -142,5 +142,5 @@ class CompAnnTransMap(CompAnnReference):
         self.fasta = target_genome_files.genome_fasta
         self.mode = 'transMap'
         self.db = os.path.join(out_dir, 'classifications.db')
-        self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet, 
+        self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
                                     self.genome)

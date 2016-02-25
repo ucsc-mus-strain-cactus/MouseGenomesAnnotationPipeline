@@ -1,10 +1,11 @@
 """
 Run the pipeline
 """
+import os
 import argparse
 import luigi
 from pycbio.sys.procOps import runProc
-from pycbio.sys.fileOps import ensureDir, iterRows
+from pycbio.sys.fileOps import ensureDir
 from lib.ucsc_chain_net import chainNetStartup
 from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask
 from abstract_classes import RowsSqlTarget
@@ -186,8 +187,7 @@ class ChainFiles(AbstractJobTreeTask):
 
     def run(self):
         ensureDir(self.cfg.chaining.out_dir)
-        self.make_jobtree_dir(self.cfg.chaining.jobTree)
-        chainNetStartup(self.cfg.chaining)
+        self.start_jobtree(self.cfg.chaining, chainNetStartup, norestart=self.cfg.args.norestart)
 
 
 ########################################################################################################################
@@ -236,7 +236,7 @@ class TransMapGp(AbstractAtomicFileTask):
 
     def run(self):
         cmd = ['mrnaToGene', '-keepInvalid', '-quiet', '-genePredExt', '-ignoreUniqSuffix', '-insertMergeSize=0',
-               '-cdsFile={}'.format(self.cfg.annot_files.cds), self.cfg.annot_files.psl, '/dev/stdout']
+               '-cdsFile={}'.format(self.cfg.annot_files.cds), self.cfg.transmap.psl, '/dev/stdout']
         self.run_cmd(cmd)
 
 
@@ -247,61 +247,47 @@ class TransMapGp(AbstractAtomicFileTask):
 ########################################################################################################################
 ########################################################################################################################
 
-
-class RunComparativeAnnotator(luigi.WrapperTask):
-    """
-    WrapperTask for all comparativeAnnotator commands.
-    """
-    cfg = luigi.Parameter()
-
-    def requires(self):
-        yield ReferenceComparativeAnnotator(self.cfg)
-        #yield ComparativeAnnotator(self.cfg)
-
-
 class ReferenceComparativeAnnotator(AbstractJobTreeTask):
     """
     Runs transMap.
     """
     cfg = luigi.Parameter()
 
-    def construct_table_map(self, genome, psl_path):
-        num_rows = len(list(iterRows(open(psl_path))))
-        return {table: num_rows for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']}
-
     def output(self):
-        table_map = self.construct_table_map(self.cfg.comp_ann.reference.ref_genome,
-                                                 self.cfg.comp_ann.reference.ref_psl)
         r = []
-        for table, num_rows in table_map.iteritems():
-            r.append(RowsSqlTarget(self.cfg.comp_ann.reference.db, table, num_rows))
+        genome = self.cfg.comp_ann.reference.ref_genome
+        for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']:
+            r.append(RowsSqlTarget(self.cfg.comp_ann.reference.db, table, self.cfg.comp_ann.reference.annotation_gp))
         return r
 
     def requires(self):
         return GenomeFiles(self.cfg), AnnotationFiles(self.cfg)
 
     def run(self):
-        self.make_jobtree_dir(self.cfg.comp_ann.reference.jobTree)
         # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
         tmp_cfg = argparse.Namespace()
         tmp_cfg.__dict__.update(vars(self.cfg.comp_ann.reference))
-        comp_ann_main(tmp_cfg)
+        self.start_jobtree(tmp_cfg, comp_ann_main, norestart=self.cfg.args.norestart)
 
 
 class ComparativeAnnotator(AbstractJobTreeTask):
     """
     Runs comparativeAnnotator.
-    TODO: this should be done per-genome, re-write config to make one config object per target genome
     """
+    cfg = luigi.Parameter()
+
     def output(self):
-        return luigi.LocalTarget(self.cfg.comp_ann.transmap.done)
+        r = []
+        genome = self.cfg.comp_ann.transmap.genome
+        for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']:
+            r.append(RowsSqlTarget(self.cfg.comp_ann.transmap.db, table, self.cfg.comp_ann.transmap.target_gp))
+        return r
 
     def requires(self):
-        return (ReferenceComparativeAnnotator(self.cfg), TransMap(self.cfg), GenomeFiles(self.cfg),
-                AnnotationFiles(self.cfg))
+        return (TransMap(self.cfg), GenomeFiles(self.cfg), AnnotationFiles(self.cfg))
 
     def run(self):
-        self.make_jobtree_dir(self.cfg.comp_ann.transmap.jobTree)
-        comp_ann_main(self.cfg.comp_ann.transmap)
-        f_h = luigi.LocalTarget(self.cfg.comp_ann.transmap.done).open('w')
-        f_h.close()
+        # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
+        tmp_cfg = argparse.Namespace()
+        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann.transmap))
+        self.start_jobtree(tmp_cfg, comp_ann_main, norestart=self.cfg.args.norestart)
