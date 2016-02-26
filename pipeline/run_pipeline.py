@@ -8,7 +8,7 @@ import argparse
 # TODO: this should be in some sort of sourceme.bash file.
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
-from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator, ComparativeAnnotator
+from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator, ComparativeAnnotator, AugustusComparativeAnnotator
 from config import Configuration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
@@ -36,7 +36,7 @@ class RunPipeline(luigi.WrapperTask):
                 else:
                     yield ChainFiles(cfg)
                     yield TransMap(cfg)
-                    #yield ComparativeAnnotator(cfg)
+                    yield ComparativeAnnotator(cfg)
 
 
 def parse_args():
