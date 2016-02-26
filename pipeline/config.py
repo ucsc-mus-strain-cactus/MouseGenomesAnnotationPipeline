@@ -124,7 +124,7 @@ class CompAnnReference(HashableNamespace):
         self.annotation_gp = annot_files.gp
         self.gencode_attributes = annot_files.attributes
         self.mode = 'reference'
-        self.db = os.path.join(out_dir, 'classifications.db')
+        self.db = os.path.join(out_dir, '{}.db'.format(self.ref_genome))
         self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
                                     self.ref_genome)
 
@@ -141,6 +141,21 @@ class CompAnnTransMap(CompAnnReference):
         self.target_gp = transmap.gp
         self.fasta = target_genome_files.genome_fasta
         self.mode = 'transMap'
-        self.db = os.path.join(out_dir, 'classifications.db')
+        self.db = os.path.join(out_dir, '{}.db'.format(self.genome))
         self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
                                     self.genome)
+
+
+class CompAnnAugustus(HashableNamespace):
+    """
+    The args object that will be passed directly to jobTree
+    """
+    def __init__(self, args, target_genome_files, annot_files, augustus_files, out_dir, gene_set):
+        self.__dict__.update(vars(args.jobTreeOptions))
+        self.out_dir = out_dir
+        self.annotation_gp = annot_files.gp
+        self.augustus_gp = augustus_files.gp
+        self.mode = 'augustus'
+        self.db = os.path.join(out_dir, '{}.db'.format(target_genome_files.genome))
+        self.jobTree = os.path.join(args.jobTreeDir, 'augustusComparativeAnnotator', gene_set.sourceGenome,
+                                    gene_set.geneSet, self.genome)

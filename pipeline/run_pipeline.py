@@ -8,7 +8,7 @@ import argparse
 # TODO: this should be in some sort of sourceme.bash file.
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
-from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator, ComparativeAnnotator, AugustusComparativeAnnotator
+from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator, ComparativeAnnotator#, AugustusComparativeAnnotator
 from config import Configuration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
