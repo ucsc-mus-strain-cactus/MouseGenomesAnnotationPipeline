@@ -9,18 +9,18 @@ Main set of classes for comparativeAnnotator pipeline. Broken down into the cate
 """
 import luigi
 import os
-import pandas as pd
 from jobTree.src.jobTreeStatus import parseJobFiles
 from jobTree.src.master import getJobFileDirName
-from pycbio.sys.procOps import runProc, callProc
+from pycbio.sys.procOps import runProc
 from pycbio.sys.fileOps import ensureDir, rmTree, iterRows
-from pycbio.sys.sqliteOps import get_query_ids, open_database
+from pycbio.sys.sqliteOps import open_database, execute_query
 
 ########################################################################################################################
 ########################################################################################################################
 ## Abstract Tasks
 ########################################################################################################################
 ########################################################################################################################
+
 
 class AbstractAtomicFileTask(luigi.Task):
     """
@@ -94,7 +94,7 @@ class AbstractJobTreeTask(luigi.Task):
 
     def jobtree_is_finished(self, jobtree_path):
         """
-        See if this jobTree has finished before.
+        See if this jobTree has finished before. Code extracted from the jobTree repo.
         """
         childJobFileToParentJob, childCounts, updatedJobFiles, shellJobs = {}, {}, set(), set()
         parseJobFiles(getJobFileDirName(jobtree_path), updatedJobFiles, childJobFileToParentJob, childCounts, shellJobs)
@@ -159,11 +159,11 @@ class RowsSqlTarget(luigi.Target):
         if not os.path.exists(self.db_path):
             return False
         con, cur = open_database(self.db_path)
-        #check if table exists
+        # check if table exists
         query = 'SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'.format(self.table)
-        if len(cur.execute(query).fetchall()) != 1:
+        if len(execute_query(cur, query).fetchall()) != 1:
             return False
         num_rows_in_file = self.find_num_rows()
-        query = 'SELECT Count(*) FROM {}'.format(self.table)
-        num_rows_in_table = cur.execute(query).fetchone()[0]
+        query = 'SELECT COUNT(*) FROM "{}"'.format(self.table)
+        num_rows_in_table = execute_query(cur, query).fetchone()[0]
         return num_rows_in_table == num_rows_in_file

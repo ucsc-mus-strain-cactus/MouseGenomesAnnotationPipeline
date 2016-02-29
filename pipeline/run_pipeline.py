@@ -8,8 +8,10 @@ import argparse
 # TODO: this should be in some sort of sourceme.bash file.
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
-from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator, ComparativeAnnotator#, AugustusComparativeAnnotator
-from config import Configuration
+from pycbio.sys.fileOps import iterRows
+from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator,\
+    ComparativeAnnotator, AugustusComparativeAnnotator, TransMapAnalysis
+from config import QueryTargetConfiguration, AnalysesConfiguration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
 
@@ -27,7 +29,7 @@ class RunPipeline(luigi.WrapperTask):
             target_genomes = set(self.params.targetGenomes)
             target_genomes.add(gene_set.sourceGenome)
             for target_genome in target_genomes:
-                cfg = Configuration(self.params, gene_set.sourceGenome, target_genome, gene_set)
+                cfg = QueryTargetConfiguration(self.params, gene_set.sourceGenome, target_genome, gene_set)
                 cfgs.append(cfg)
                 yield GenomeFiles(cfg)
                 yield AnnotationFiles(cfg)
@@ -37,6 +39,9 @@ class RunPipeline(luigi.WrapperTask):
                     yield ChainFiles(cfg)
                     yield TransMap(cfg)
                     yield ComparativeAnnotator(cfg)
+            for biotype in gene_set.biotypes:
+                analyses_cfg = AnalysesConfiguration(self.params, tuple(cfgs), gene_set, biotype)
+                yield TransMapAnalysis(analyses_cfg)
 
 
 def parse_args():
@@ -61,8 +66,6 @@ def parse_args():
                                    help='progressiveCactus configuration file used to generate the HAL alignment file.')
     parser.add_argument('--localCores', default=12, metavar='INT',
                         help='Number of local cores to use. (default: %(default)d)')
-    parser.add_argument('--norestart', action='store_true', default=False,
-                        help='Set to force jobtree pipeline components to start from the beginning instead of attempting a restart')
     jobtree = parser.add_argument_group('jobTree options. Read the jobTree documentation for other options not shown')
     jobtree.add_argument('--batchSystem', default='parasol', help='jobTree batch system.')
     jobtree.add_argument('--parasolCommand', default='./bin/remparasol',
@@ -70,6 +73,13 @@ def parse_args():
     jobtree.add_argument('--maxThreads',
                          help='maxThreads for jobTree. If not using a cluster, this should be --localCores/# genomes')
     jobtree_parser = argparse.ArgumentParser(add_help=False)
+    options = parser.add_argument_group('Optional arguments')
+    options.add_argument('--filterChroms', nargs='+', default=('Y', 'chrY'),
+                         help='Chromosomes to ignore when generating plots. Useful to not skew stats in females, '
+                              'for example. List as many as you want, space separated.')
+    options.add_argument('--norestart', action='store_true', default=False,
+                         help='Set to force jobtree pipeline components to start from the beginning instead of '
+                              'attempting a restart.')
     Stack.addJobTreeOptions(jobtree_parser)
     args = parser.parse_args(namespace=HashableNamespace())
     args.jobTreeOptions = jobtree_parser.parse_known_args(namespace=HashableNamespace())[0]
@@ -81,9 +91,10 @@ def parse_args():
     args.tree = newick_str
     # make hashable
     args.geneSets = tuple(args.geneSets)
-    # add genome order to each source gene set
+    # add genome order to each source gene set as well as biotypes that exist
     for gene_set in args.geneSets:
         gene_set.orderedTargetGenomes = build_genome_order(newick_str, gene_set.sourceGenome)
+        gene_set.biotypes = get_biotypes_from_attrs(gene_set.attributesTsv)
     # set directory that jobTrees will be made in
     args.jobTreeDir = os.path.join(args.workDir, 'jobTrees')
     # if batchSystem/parasolCommand are not supplied on the command line, they will be the jobTree defaults. Fix this.
@@ -96,6 +107,15 @@ def parse_args():
         assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(geneSet.genePred)
         assert os.path.exists(geneSet.attributesTsv), 'Error: attributes file {} missing.'.format(geneSet.attributesTsv)
     return args
+
+
+def get_biotypes_from_attrs(attrs_tsv):
+    """
+    Produces a set of biotypes from the biotype column of the attributes file.
+    This is the GeneType column, the 3rd column.
+    """
+    # skip header line
+    return tuple(set(x[2] for x in iterRows(attrs_tsv, skipLines=1)))
 
 
 def build_genome_order(newick_str, ref_genome):

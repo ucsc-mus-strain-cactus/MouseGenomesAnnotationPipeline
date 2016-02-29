@@ -10,6 +10,8 @@ from lib.ucsc_chain_net import chainNetStartup
 from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask
 from abstract_classes import RowsSqlTarget
 from comparativeAnnotator.annotation_pipeline import main as comp_ann_main
+from comparativeAnnotator.plotting.transmap_analysis import paralogy_plot, cov_plot, ident_plot, num_pass_excel,\
+    num_pass_excel_gene_level
 
 ########################################################################################################################
 ########################################################################################################################
@@ -240,12 +242,12 @@ class TransMapGp(AbstractAtomicFileTask):
         self.run_cmd(cmd)
 
 
-
 ########################################################################################################################
 ########################################################################################################################
 ## comparativeAnnotator
 ########################################################################################################################
 ########################################################################################################################
+
 
 class ReferenceComparativeAnnotator(AbstractJobTreeTask):
     """
@@ -255,9 +257,9 @@ class ReferenceComparativeAnnotator(AbstractJobTreeTask):
 
     def output(self):
         r = []
-        genome = self.cfg.comp_ann.reference.ref_genome
+        genome = self.cfg.comp_ann.ref_genome
         for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']:
-            r.append(RowsSqlTarget(self.cfg.comp_ann.reference.db, table, self.cfg.comp_ann.reference.annotation_gp))
+            r.append(RowsSqlTarget(self.cfg.comp_ann.db, table, self.cfg.comp_ann.annotation_gp))
         return r
 
     def requires(self):
@@ -266,7 +268,7 @@ class ReferenceComparativeAnnotator(AbstractJobTreeTask):
     def run(self):
         # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
         tmp_cfg = argparse.Namespace()
-        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann.reference))
+        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann))
         self.start_jobtree(tmp_cfg, comp_ann_main, norestart=self.cfg.args.norestart)
 
 
@@ -278,16 +280,61 @@ class ComparativeAnnotator(AbstractJobTreeTask):
 
     def output(self):
         r = []
-        genome = self.cfg.comp_ann.transmap.genome
+        genome = self.cfg.comp_ann.genome
         for table in [genome + '_Attributes', genome + '_Classify', genome + '_Details']:
-            r.append(RowsSqlTarget(self.cfg.comp_ann.transmap.db, table, self.cfg.comp_ann.transmap.target_gp))
+            r.append(RowsSqlTarget(self.cfg.comp_ann.db, table, self.cfg.comp_ann.target_gp))
         return r
 
     def requires(self):
-        return (TransMap(self.cfg), GenomeFiles(self.cfg), AnnotationFiles(self.cfg))
+        return TransMap(self.cfg), GenomeFiles(self.cfg), AnnotationFiles(self.cfg)
 
     def run(self):
         # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
         tmp_cfg = argparse.Namespace()
-        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann.transmap))
+        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann))
+        ensureDir(os.path.dirname(self.cfg.comp_ann.db))
         self.start_jobtree(tmp_cfg, comp_ann_main, norestart=self.cfg.args.norestart)
+
+
+class AugustusComparativeAnnotator(AbstractJobTreeTask):
+    """
+    Runs augustusComparativeAnnotator.
+    """
+    cfg = luigi.Parameter()
+
+
+########################################################################################################################
+########################################################################################################################
+## combined plots
+########################################################################################################################
+########################################################################################################################
+
+
+class TransMapAnalysis(luigi.Task):
+    """
+    Analysis plots on how well transMap did. Produced based on comparativeAnnotator output.
+    TODO: make this a individual luigi task for each plot
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        r = []
+        for cfg in self.cfg.cfgs:
+            if cfg.query_genome == cfg.target_genome:
+                r.append(ReferenceComparativeAnnotator(cfg=cfg))
+            else:
+                r.append(ComparativeAnnotator(cfg=cfg))
+        return r
+
+    def output(self):
+        return (luigi.LocalTarget(p) for p in self.cfg.tm_plots.plots)
+
+    def run(self):
+        tm_cfg = self.cfg.tm_plots
+        paralogy_plot(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.para_plot, self.cfg.db)
+        cov_plot(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.cov_plot, self.cfg.db)
+        ident_plot(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.ident_plot, self.cfg.db)
+        num_pass_excel(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.num_pass_excel,
+                       self.cfg.db, self.cfg.args.filterChroms)
+        num_pass_excel_gene_level(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype,
+                                  tm_cfg.num_pass_excel_gene, self.cfg.db, self.cfg.args.filterChroms)

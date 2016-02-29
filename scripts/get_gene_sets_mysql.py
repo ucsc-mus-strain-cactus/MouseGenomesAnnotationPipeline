@@ -14,11 +14,19 @@ def parse_args():
     parser.add_argument('database', help='mySQL database to load ensembl genes from')
     parser.add_argument('--name', help='Name to use instead of database name', default=None)
     parser.add_argument('--outDir', help='location to place files. (default: %(default)s)', default='./genesets')
+    parser.add_argument('--includeChroms', nargs='+', default=None, help='Limit to just these chromosomes.')
     return parser.parse_args()
 
 
-def get_genes(database, name, out_dir):
-    cmd = ['hgsql', '-Ne', 'select * from ensGene', database]
+def get_genes(database, name, out_dir, include_chroms):
+    if include_chroms is None:
+        cmd = ['hgsql', '-Ne', 'select * from ensGene', database]
+    else:
+        l = 'select * from ensGene where '
+        for c in include_chroms[:-1]:
+            l += 'chrom = "{}" and '.format(c)
+        l += 'chrom = "{}"'.format(include_chroms[-1])
+        cmd = ['hgsql', '-Ne', l, database]
     with open(os.path.join(out_dir, name + '.gp'), 'w') as outf:
         runProc(cmd, stdout=outf)
 
@@ -32,8 +40,8 @@ def build_attributes(database, name, out_dir):
     transcripts_cmd = ['hgsql', '-Ne', 'select transcript, gene from ensGtp', database]
     transcripts = dict(x.split() for x in callProcLines(transcripts_cmd))
     r = []
-    for transcript_id, gene_id in transcripts.iteritems():
-        gene_name = genes[transcript_id]
+    for transcript_id, gene_name in transcripts.iteritems():
+        gene_id = genes[transcript_id]
         biotype = source[transcript_id]
         r.append([gene_id, gene_name, biotype, transcript_id, biotype])
     with open(os.path.join(out_dir, name + '.tsv'), 'w') as outf:
@@ -46,8 +54,8 @@ def main():
     args = parse_args()
     if args.name is None:
         args.name = args.database
-        ensureDir(args.outDir)
-    get_genes(args.database, args.name, args.outDir)
+    ensureDir(args.outDir)
+    get_genes(args.database, args.name, args.outDir, args.includeChroms)
     build_attributes(args.database, args.name, args.outDir)
 
 

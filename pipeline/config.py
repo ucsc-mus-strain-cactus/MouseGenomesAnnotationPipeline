@@ -5,7 +5,7 @@ import os
 from lib.parsing import HashableNamespace
 
 
-class Configuration(HashableNamespace):
+class QueryTargetConfiguration(HashableNamespace):
     """
     Builds a huge namespace denoting every file produced for a combination of geneset-genome.
     """
@@ -24,11 +24,31 @@ class Configuration(HashableNamespace):
         self.transmap = TransMapConfiguration(args, target_genome, query_genome,
                                               self.target_genome_files.genome_two_bit,
                                               self.query_genome_files.genome_two_bit, gene_set)
-        self.comp_ann = ComparativeAnnotatorConfiguration(args, self.gene_set, self.query_genome_files,
-                                                          self.target_genome_files, self.annot_files, self.transmap)
+        if self.query_genome == self.target_genome:
+            self.comp_ann = CompAnnReferenceConfiguration(args, self.gene_set, self.query_genome_files,
+                                                          self.annot_files)
+        else:
+            self.comp_ann = CompAnnTransMapConfiguration(args, self.query_genome_files, self.target_genome_files,
+                                                         self.annot_files, self.transmap, gene_set)
 
     def __repr__(self):
         return '{}: {}-{} ({})'.format(self.__class__.__name__, self.query_genome, self.target_genome, self.gene_set)
+
+
+class PipelineFinishConfiguration(HashableNamespace):
+    """
+    Builds a namespace denoting every file produced at the end of the pipeline, generally plots.
+    This is done on a per geneset basis.
+    This namespace stores every QueryTargetConfiguration produced in the pipeline.
+    """
+    def __init__(self, args, gene_set, cfgs):
+        self.args = args
+        self.cfgs = cfgs
+        self.gene_set = gene_set
+        self.plot_cfg = TransMapPlots(args, gene_set, cfgs)
+
+    def __repr__(self):
+        return '{}: {}'.format(self.__class__.__name__,  self.gene_set)
 
 
 class GenomeFileConfiguration(HashableNamespace):
@@ -96,27 +116,12 @@ class TransMapConfiguration(HashableNamespace):
         self.gp = os.path.join(tm_dir, target_genome + '.gp')
 
 
-class ComparativeAnnotatorConfiguration(HashableNamespace):
-    """
-    Takes the initial configuration from the main driver script and builds paths to all files that will be produced
-    by these tasks.
-    """
-    def __init__(self, args, gene_set, query_genome_files, target_genome_files, annot_files, transmap):
-        self.work_dir = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet)
-        self.metrics_dir = os.path.join(args.outputDir, 'metrics')
-        self.tx_set_dir = os.path.join(args.outputDir, 'tm_transcript_set')
-        self.reference = CompAnnReference(args, query_genome_files, annot_files, self.work_dir, gene_set)
-        self.transmap = CompAnnTransMap(args, query_genome_files, target_genome_files, annot_files, transmap,
-                                        self.work_dir, gene_set)
-
-
-class CompAnnReference(HashableNamespace):
+class CompAnnReferenceConfiguration(HashableNamespace):
     """
     The args object that will be passed directly to jobTree
     """
-    def __init__(self, args, query_genome_files, annot_files, out_dir, gene_set):
+    def __init__(self, args, gene_set, query_genome_files, annot_files):
         self.__dict__.update(vars(args.jobTreeOptions))
-        self.out_dir = out_dir
         self.ref_genome = query_genome_files.genome
         self.ref_fasta = query_genome_files.genome_fasta
         self.ref_psl = annot_files.psl
@@ -124,38 +129,73 @@ class CompAnnReference(HashableNamespace):
         self.annotation_gp = annot_files.gp
         self.gencode_attributes = annot_files.attributes
         self.mode = 'reference'
-        self.db = os.path.join(out_dir, '{}.db'.format(self.ref_genome))
+        self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
+                               'classification.db')
         self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
                                     self.ref_genome)
 
 
-class CompAnnTransMap(CompAnnReference):
+class CompAnnTransMapConfiguration(CompAnnReferenceConfiguration):
     """
     The args object that will be passed directly to jobTree
     """
-    def __init__(self, args, query_genome_files, target_genome_files, annot_files, transmap, out_dir, gene_set):
-        super(CompAnnTransMap, self).__init__(args, query_genome_files, annot_files, out_dir, gene_set)
+    def __init__(self, args, query_genome_files, target_genome_files, annot_files, transmap, gene_set):
+        super(CompAnnTransMapConfiguration, self).__init__(args, gene_set, query_genome_files, annot_files)
         self.genome = target_genome_files.genome
         self.psl = transmap.psl
-        self.ref_psl = annot_files.psl
         self.target_gp = transmap.gp
         self.fasta = target_genome_files.genome_fasta
         self.mode = 'transMap'
-        self.db = os.path.join(out_dir, '{}.db'.format(self.genome))
         self.jobTree = os.path.join(args.jobTreeDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
                                     self.genome)
 
 
-class CompAnnAugustus(HashableNamespace):
+class CompAnnAugustusConfiguration(HashableNamespace):
     """
     The args object that will be passed directly to jobTree
+    FIXME
     """
     def __init__(self, args, target_genome_files, annot_files, augustus_files, out_dir, gene_set):
         self.__dict__.update(vars(args.jobTreeOptions))
         self.out_dir = out_dir
+        self.genome = target_genome_files.genome
         self.annotation_gp = annot_files.gp
         self.augustus_gp = augustus_files.gp
         self.mode = 'augustus'
-        self.db = os.path.join(out_dir, '{}.db'.format(target_genome_files.genome))
+        self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
+                               'classification.db')
         self.jobTree = os.path.join(args.jobTreeDir, 'augustusComparativeAnnotator', gene_set.sourceGenome,
                                     gene_set.geneSet, self.genome)
+
+
+class AnalysesConfiguration(HashableNamespace):
+    """
+    Takes the initial configuration and builds paths to files that are shared between analyses. Mostly plots.
+    """
+    def __init__(self, args, cfgs, gene_set, biotype):
+        self.args = args
+        self.cfgs = cfgs
+        self.biotype = biotype
+        self.query_genome = gene_set.sourceGenome
+        self.target_genomes = gene_set.orderedTargetGenomes
+        self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
+                               'classification.db')
+        self.gene_set = gene_set
+        self.tm_plots = TransMapPlots(args, gene_set, biotype)
+
+
+class TransMapPlots(HashableNamespace):
+    """
+    Takes the initial configuration from the main driver script and builds paths to all files that will be produced
+    by these tasks.
+    """
+    def __init__(self, args, gene_set, biotype):
+        self.args = args
+        self.gene_set = gene_set
+        self.out_dir = os.path.join(args.outputDir, 'transMap_plots', biotype)
+        self.para_plot = os.path.join(self.out_dir, biotype + '_alignment_paralogy.pdf')
+        self.ident_plot = os.path.join(self.out_dir, biotype + '_alignment_identity.pdf')
+        self.cov_plot = os.path.join(self.out_dir, biotype + '_alignment_coverage.pdf')
+        self.num_pass_excel = os.path.join(self.out_dir, biotype + '_alignment_num_pass_excel.pdf')
+        self.num_pass_excel_gene = os.path.join(self.out_dir, biotype + '_alignment_num_pass_excel_gene.pdf')
+        self.plots = (self.para_plot, self.ident_plot, self.cov_plot, self.num_pass_excel, self.num_pass_excel_gene)
