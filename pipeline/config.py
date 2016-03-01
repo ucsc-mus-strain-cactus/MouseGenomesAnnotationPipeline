@@ -32,6 +32,9 @@ class QueryTargetConfiguration(HashableNamespace):
             self.comp_ann = CompAnnTransMapConfiguration(args, self.query_genome_files, self.target_genome_files,
                                                          self.annot_files, self.transmap, gene_set)
             self.geneset = TransMapGeneSet(args, self.comp_ann, gene_set)
+        if self.args.augustus is True:
+            self.tmr = AugustusTMR(self.args, self.transmap, self.gene_set, self.target_genome,
+                                   self.target_genome_files, self.annot_files)
 
     def __repr__(self):
         return '{}: {}-{} ({})'.format(self.__class__.__name__, self.query_genome, self.target_genome, self.gene_set)
@@ -159,24 +162,6 @@ class TransMapGeneSet(HashableNamespace):
         self.tmp_pickle = os.path.join(self.tmp_dir, self.genome + '.metrics.pickle')
 
 
-class CompAnnAugustusConfiguration(HashableNamespace):
-    """
-    The args object that will be passed directly to jobTree
-    FIXME
-    """
-    def __init__(self, args, target_genome_files, annot_files, augustus_files, out_dir, gene_set):
-        self.__dict__.update(vars(args.jobTreeOptions))
-        self.out_dir = out_dir
-        self.genome = target_genome_files.genome
-        self.annotation_gp = annot_files.gp
-        self.augustus_gp = augustus_files.gp
-        self.mode = 'augustus'
-        self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
-                               'classification.db')
-        self.jobTree = os.path.join(args.jobTreeDir, 'augustusComparativeAnnotator', gene_set.sourceGenome,
-                                    gene_set.geneSet, self.genome)
-
-
 ########################################################################################################################
 ########################################################################################################################
 ## Configuration for shared analyses
@@ -201,10 +186,15 @@ class AnalysesConfiguration(HashableNamespace):
         self.gene_set_plot_dir = os.path.join(args.outputDir, 'transMap_GeneSet_plots')
         self.gene_biotype_plot = os.path.join(self.gene_set_plot_dir, 'gene_biotype_stacked_plot.pdf')
         self.transcript_biotype_plot = os.path.join(self.gene_set_plot_dir, 'transcript_biotype_stacked_plot.pdf')
-        self.tm_gene_set_plots = frozendict([b, TransMapGeneSetPlots(args, gene_set, b, self.gene_set_plot_dir)]
+        self.tm_gene_set_plots = frozendict([b, GeneSetPlotsConfig(args, gene_set, b, self.gene_set_plot_dir)]
                                             for b in self.biotypes)
         self.pickle_dir = os.path.join(args.workDir, 'transMap_gene_set_metrics', gene_set.sourceGenome,
                                        gene_set.geneSet)
+        if args.augustus is True:
+            p = 'AugustusTMR' if args.augustusHints is not None else 'AugustusTM'
+            self.aug_gene_set_plot_dir = os.path.join(args.outputDir, '{}_GeneSet_plots'.format(p))
+            self.aug_gene_set_plots = frozendict([b, GeneSetPlotsConfig(args, gene_set, b, self.aug_gene_set_plot_dir)]
+                                                 for b in self.biotypes)
 
     def __repr__(self):
         return 'AnalysesConfiguration: {}-{}'.format(self.gene_set.sourceGenome, self.gene_set.geneSet)
@@ -229,7 +219,7 @@ class TransMapPlots(HashableNamespace):
                            self.num_pass_excel_gene])
 
 
-class TransMapGeneSetPlots(HashableNamespace):
+class GeneSetPlotsConfig(HashableNamespace):
     """
     Takes the initial configuration from the main driver script and builds paths to all files that will be produced
     by these tasks.
@@ -247,3 +237,124 @@ class TransMapGeneSetPlots(HashableNamespace):
         self.dup_rate_plot = os.path.join(self.out_dir, biotype, biotype + '_dup_rate_plot.pdf')
         self.plots = tuple([self.tx_plot, self.gene_plot, self.size_plot, self.gene_size_plot, self.fail_plot,
                             self.dup_rate_plot])
+
+
+########################################################################################################################
+########################################################################################################################
+## Configuration for Augustus
+########################################################################################################################
+########################################################################################################################
+
+
+class AugustusTMR(HashableNamespace):
+    """
+    AugustusTMR
+    TODO: many of these things should not be hard coded like they are.
+    TODO: should ask user which Augustus training set to use, right now it defaults to human.
+    """
+    def __init__(self, args, transmap_cfg, gene_set, target_genome, target_genome_files, annot_files):
+        self.input_gp = transmap_cfg.gp
+        self.path = 'AugustusTMR' if args.augustusHints is not None else 'AugustusTM'
+        self.work_dir = os.path.join(args.workDir, self.path)
+        self.output_dir = os.path.join(args.outputDir, self.path)
+        self.genome = target_genome
+        self.vector_gp = os.path.join(self.work_dir, 'intron_vector_gps', self.genome + '.intron_vector.gp')
+        self.tmr_fa = os.path.join(self.work_dir, self.path + '_fastas', self.genome + '.fa')
+        self.tmr_bed = os.path.join(self.work_dir, self.path + '_bed', self.genome + '.bed')
+        self.out_gtf = os.path.join(self.output_dir, self.genome + '.gtf')
+        self.out_gp = os.path.join(self.output_dir, self.genome + '.gp')
+        self.chrom_sizes = target_genome_files.chrom_sizes
+        self.fasta = target_genome_files.genome_fasta
+        self.jobTree = os.path.join(args.jobTreeDir, self.path, gene_set.sourceGenome, gene_set.geneSet, self.genome)
+        self.comp_ann_tm = CompAnnAugustusConfiguration(args, target_genome_files, annot_files, self, transmap_cfg,
+                                                        gene_set)
+        self.run_tmr = TMRJobTree(args, self, gene_set)
+        self.align = AlignAugustusJobTree(args, self, gene_set, annot_files)
+        self.aug_geneset = AugustusGeneSetConfig(args, self, gene_set, annot_files, transmap_cfg)
+
+
+class TMRJobTree(HashableNamespace):
+    """
+    The args object that will be passed directly to jobTree
+    """
+    def __init__(self, args, augustus_files, gene_set):
+        self.__dict__.update(vars(args.jobTreeOptions))
+        tm_2_hints_script = 'submodules/comparativeAnnotator/augustus/transMap2hints.pl'  # TODO: don't hardcode
+        assert os.path.exists(tm_2_hints_script)
+        tm_2_hints_params = ("--ep_cutoff=0 --ep_margin=12 --min_intron_len=40 --start_stop_radius=5 --tss_tts_radius=5"
+                             " --utrend_cutoff=6 --in=/dev/stdin --out=/dev/stdout")
+        self.tm_2_hints_cmd = " ".join([tm_2_hints_script, tm_2_hints_params])
+        # can we run TMR or just TM?
+        self.cfgs = {1: "submodules/comparativeAnnotator/augustus/extrinsic.ETM1.cfg"}
+        if args.augustusHints is not None:
+            self.cfgs[2] = "submodules/comparativeAnnotator/augustus/extrinsic.ETM2.cfg"
+        self.cfgs = frozendict(self.cfgs)
+        assert all([os.path.exists(x) for x in self.cfgs.itervalues()])
+        self.augustus_bin = 'submodules/augustus/bin/augustus'
+        assert os.path.exists(self.augustus_bin)
+        self.padding = 25000
+        self.max_gene_size = 2000000
+        self.hints_db = args.augustusHints
+        self.out_gtf = augustus_files.out_gtf
+        self.genome = augustus_files.genome
+        self.fasta = augustus_files.fasta
+        self.chrom_sizes = augustus_files.chrom_sizes
+        self.input_gp = augustus_files.vector_gp
+        self.jobTree = os.path.join(args.jobTreeDir, augustus_files.path, gene_set.sourceGenome, gene_set.geneSet,
+                                    self.genome)
+
+
+class CompAnnAugustusConfiguration(HashableNamespace):
+    """
+    The args object that will be passed directly to jobTree
+    """
+    def __init__(self, args, target_genome_files, annot_files, augustus_files, transmap_cfg, gene_set):
+        self.__dict__.update(vars(args.jobTreeOptions))
+        self.genome = target_genome_files.genome
+        self.annotation_gp = annot_files.gp
+        self.augustus_gp = augustus_files.out_gp
+        self.target_gp = transmap_cfg.gp
+        self.mode = 'augustus'
+        self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
+                               'classification.db')
+        self.jobTree = os.path.join(args.jobTreeDir, 'augustusComparativeAnnotator', gene_set.sourceGenome,
+                                    gene_set.geneSet, self.genome)
+
+
+class AlignAugustusJobTree(HashableNamespace):
+    """
+    The args object that will be passed directly to jobTree
+    """
+    def __init__(self, args, augustus_files, gene_set, annot_files):
+        self.__dict__.update(vars(args.jobTreeOptions))
+        self.genome = augustus_files.genome
+        self.fasta = augustus_files.tmr_fa
+        self.ref_fasta = annot_files.transcript_fasta
+        self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
+                               'classification.db')
+        self.jobTree = os.path.join(args.jobTreeDir, 'alignAugustus', gene_set.sourceGenome,
+                                    gene_set.geneSet, self.genome)
+
+
+class AugustusGeneSetConfig(HashableNamespace):
+    """
+    Produces a gene set from transMap alignments, taking into account classifications.
+    """
+    def __init__(self, args, tmr, gene_set, annot_files, transmap_cfg):
+        self.args = args
+        self.filter_chroms = args.filterChroms
+        self.genome = tmr.genome
+        self.ref_genome = gene_set.sourceGenome
+        self.target_gp = transmap_cfg.gp
+        self.annotation_gp = annot_files.gp
+        self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
+                               'classification.db')
+        self.biotypes = gene_set.biotypes
+        self.mode = 'augustus'
+        self.gene_set_name = gene_set.geneSet
+        self.out_dir = os.path.join(args.outputDir, 'consensus_gene_set', gene_set.sourceGenome, gene_set.geneSet,
+                                    self.genome)
+        self.out_gps = frozendict((x, os.path.join(self.out_dir, x + '.gp')) for x in gene_set.biotypes)
+        self.out_gtfs = frozendict((x, os.path.join(self.out_dir, x + '.gtf')) for x in gene_set.biotypes)
+        self.tmp_dir = os.path.join(args.workDir, 'consensus_gene_set_metrics', gene_set.sourceGenome, gene_set.geneSet)
+        self.tmp_pickle = os.path.join(self.tmp_dir, self.genome + '.metrics.pickle')

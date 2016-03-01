@@ -8,6 +8,7 @@ Main set of classes for comparativeAnnotator pipeline. Broken down into the cate
 5. metrics
 """
 import luigi
+import argparse
 import os
 from jobTree.src.jobTreeStatus import parseJobFiles
 from jobTree.src.master import getJobFileDirName
@@ -119,17 +120,21 @@ class AbstractJobTreeTask(luigi.Task):
     def start_jobtree(self, args, entry_fn, norestart=False):
         """
         Start a jobTree. Based on the flag norestart, will decide if we should attempt a restart.
+        TODO: this hack re-creates the namespace to avoid import issues.
         """
+        tmp_cfg = argparse.Namespace()
+        tmp_cfg.__dict__.update(vars(args))
+        ensureDir(os.path.dirname(args.jobTree))
         jobtree_path = args.jobTree
         if norestart is True or not os.path.exists(jobtree_path) or self.jobtree_is_finished(jobtree_path):
             self.make_jobtree_dir(jobtree_path)
-            entry_fn(args)
+            entry_fn(tmp_cfg)
         else:  # try restarting the tree
             try:
                 entry_fn(args)
             except RuntimeError:  # try starting over
                 self.make_jobtree_dir(jobtree_path)
-                entry_fn(args)
+                entry_fn(tmp_cfg)
 
 
 ########################################################################################################################

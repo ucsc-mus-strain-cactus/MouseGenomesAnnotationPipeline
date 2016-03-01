@@ -10,7 +10,8 @@ os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/com
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
 from pycbio.sys.fileOps import iterRows
 from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator,\
-    ComparativeAnnotator, AugustusComparativeAnnotator, TransMapAnalysis, TransMapGeneSet, TransMapGeneSetPlots
+    ComparativeAnnotator, RunAugustus, TransMapAnalysis, TransMapGeneSet, AugustusGeneSet, \
+    TransMapGeneSetPlots, AugustusGeneSetPlots
 from config import QueryTargetConfiguration, AnalysesConfiguration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
@@ -40,9 +41,14 @@ class RunPipeline(luigi.WrapperTask):
                     yield TransMap(cfg)
                     yield ComparativeAnnotator(cfg)
                     yield TransMapGeneSet(cfg)
+                    if self.params.augustus is True:
+                        yield RunAugustus(cfg)
+                        yield AugustusGeneSet(cfg)
             analyses_cfg = AnalysesConfiguration(self.params, tuple(cfgs), gene_set)
             yield TransMapAnalysis(analyses_cfg)
             yield TransMapGeneSetPlots(analyses_cfg)
+            if self.params.augustus is True:
+                yield AugustusGeneSetPlots(analyses_cfg)
 
 
 def parse_args():
@@ -54,7 +60,7 @@ def parse_args():
                         help='Input gene sets. Expects groups of four key-value pairs in the format --geneSets '
                              'geneSet=Ensembl sourceGenome=C_elegans genePred=testdata/c_elegans.transcripts.gp '
                              'attributesTsv=testdata/ce11.ensembl.attributes.tsv')
-    parser.add_argument('--targetGenomes', default=None, nargs='+',
+    parser.add_argument('--targetGenomes', default=None, nargs='+', metavar='NAMES',
                         help='Space-separated list of genomes you wish to annotate. '
                              'If not set, all non-reference genomes will be annotated.')
     parser.add_argument_with_mkdir_p('--workDir', default='work', metavar='DIR',
@@ -66,11 +72,18 @@ def parse_args():
                                    help='progressiveCactus configuration file used to generate the HAL alignment file.')
     parser.add_argument('--localCores', default=12, metavar='INT',
                         help='Number of local cores to use. (default: %(default)d)')
+    parser.add_argument_with_check('--augustusHints', default=None, metavar='FILE',
+                                   help='Augustus hints DB. If not set, and --augusuts is set, no RNAseq will be used.')
+    parser.add_argument('--augustus', action='store_true',
+                        help='Should we run AugustusTM(R) on this analysis? If set, and --augustusHints is not set,'
+                             ' then TM mode will be executed. Both modes are highly computationally intensive.')
+    parser.add_argument('--augustusGenomes', default=None, nargs='+', metavar='NAMES',
+                        help='Space-separated list of genomes you wish to run AugustusTM(R) on.')
     jobtree = parser.add_argument_group('jobTree options. Read the jobTree documentation for other options not shown')
     jobtree.add_argument('--batchSystem', default='parasol', help='jobTree batch system.')
     jobtree.add_argument('--parasolCommand', default='./bin/remparasol',
                          help='Parasol command used by jobTree. Used to remap to host node.')
-    jobtree.add_argument('--maxThreads',
+    jobtree.add_argument('--maxThreads', default=4,
                          help='maxThreads for jobTree. If not using a cluster, this should be --localCores/# genomes')
     jobtree_parser = argparse.ArgumentParser(add_help=False)
     options = parser.add_argument_group('Optional arguments')
@@ -107,6 +120,8 @@ def parse_args():
         assert all([x in geneSet for x in ['geneSet', 'sourceGenome', 'genePred', 'attributesTsv']])
         assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(geneSet.genePred)
         assert os.path.exists(geneSet.attributesTsv), 'Error: attributes file {} missing.'.format(geneSet.attributesTsv)
+    if args.augustusGenomes is None:
+        args.augustusGenomes = tuple(args.targetGenomes)  # TODO: not hashable?
     return args
 
 

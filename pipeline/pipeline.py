@@ -15,6 +15,9 @@ from comparativeAnnotator.plotting.transmap_analysis import paralogy_plot, cov_p
     num_pass_excel_gene_level
 from comparativeAnnotator.generate_gene_set import generate_consensus
 from comparativeAnnotator.plotting.gene_set_plots import gene_set_plots
+from comparativeAnnotator.augustus.run_augustus import augustus_tmr
+from comparativeAnnotator.augustus.find_intron_vector import find_intron_vector
+from comparativeAnnotator.augustus.align_augustus import align_augustus
 
 ########################################################################################################################
 ########################################################################################################################
@@ -181,8 +184,6 @@ class ChainFiles(AbstractJobTreeTask):
     """
     Interfaces with jobTree to make Kent chains over the HAL alignment.
     """
-    cfg = luigi.Parameter()
-
     def output(self):
         return luigi.LocalTarget(self.cfg.chaining.chainFile), luigi.LocalTarget(self.cfg.chaining.netFile)
 
@@ -222,7 +223,7 @@ class TransMapPsl(AbstractAtomicFileTask):
 
     def run(self):
         psl_cmd = ['pslMap', '-chainMapFile', self.cfg.annot_files.psl,
-                    self.cfg.chaining.chainFile, '/dev/stdout']
+                   self.cfg.chaining.chainFile, '/dev/stdout']
         post_chain_cmd = ['bin/postTransMapChain', '/dev/stdin', '/dev/stdout']
         sort_cmd = ['sort', '-k', '14,14', '-k', '16,16n']
         recalc_cmd = ['pslRecalcMatch', '/dev/stdin', self.cfg.chaining.targetTwoBit,
@@ -256,8 +257,6 @@ class ReferenceComparativeAnnotator(AbstractJobTreeTask):
     """
     Runs transMap.
     """
-    cfg = luigi.Parameter()
-
     def output(self):
         r = []
         genome = self.cfg.comp_ann.ref_genome
@@ -269,18 +268,13 @@ class ReferenceComparativeAnnotator(AbstractJobTreeTask):
         return GenomeFiles(self.cfg), AnnotationFiles(self.cfg)
 
     def run(self):
-        # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
-        tmp_cfg = argparse.Namespace()
-        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann))
-        self.start_jobtree(tmp_cfg, comp_ann_main, norestart=self.cfg.args.norestart)
+        self.start_jobtree(self.cfg.comp_ann, comp_ann_main, norestart=self.cfg.args.norestart)
 
 
 class ComparativeAnnotator(AbstractJobTreeTask):
     """
     Runs comparativeAnnotator.
     """
-    cfg = luigi.Parameter()
-
     def output(self):
         r = []
         genome = self.cfg.comp_ann.genome
@@ -292,18 +286,7 @@ class ComparativeAnnotator(AbstractJobTreeTask):
         return TransMap(self.cfg), GenomeFiles(self.cfg), AnnotationFiles(self.cfg)
 
     def run(self):
-        # TODO: this is a hack because the comparativeAnnotator code cannot see the config module
-        tmp_cfg = argparse.Namespace()
-        tmp_cfg.__dict__.update(vars(self.cfg.comp_ann))
-        ensureDir(os.path.dirname(self.cfg.comp_ann.db))
-        self.start_jobtree(tmp_cfg, comp_ann_main, norestart=self.cfg.args.norestart)
-
-
-class AugustusComparativeAnnotator(AbstractJobTreeTask):
-    """
-    Runs augustusComparativeAnnotator.
-    """
-    cfg = luigi.Parameter()
+        self.start_jobtree(self.cfg.comp_ann, comp_ann_main, norestart=self.cfg.args.norestart)
 
 
 ########################################################################################################################
@@ -339,6 +322,34 @@ class TransMapGeneSet(luigi.Task):
         ensureDir(self.cfg.geneset.tmp_dir)
         generate_consensus(self.cfg.geneset)
         self.convert_gp_to_gtf(self.cfg.geneset.out_gps, self.cfg.geneset.out_gtfs)
+
+
+class AugustusGeneSet(luigi.Task):
+    """
+    Produces a gtf and gp of a consensus gene set for just transMap output.
+    TODO: this should be split up into individual tasks, which have a guarantee of atomicity.
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        return ComparativeAnnotator(cfg=self.cfg)
+
+    def output(self):
+        return (luigi.LocalTarget(x) for x in itertools.chain(self.cfg.aug_geneset.out_gps.values(),
+                                                              self.cfg.aug_geneset.out_gtfs.values()))
+
+    def convert_gp_to_gtf(self, gps, gtfs):
+        for gp, gtf in zip(*[gps.itervalues(), gtfs.itervalues()]):
+            s = self.cfg.aug_geneset.gene_set_name
+            cmd = [['bin/fixGenePredScore', gp],
+                   ['genePredToGtf', '-source={}'.format(s), '-honorCdsStat', '-utr', 'file', '/dev/stdin', gtf]]
+            runProc(cmd)
+
+    def run(self):
+        ensureDir(self.cfg.aug_geneset.out_dir)
+        ensureDir(self.cfg.aug_geneset.tmp_dir)
+        generate_consensus(self.cfg.aug_geneset)
+        self.convert_gp_to_gtf(self.cfg.aug_geneset.out_gps, self.cfg.aug_geneset.out_gtfs)
 
 
 ########################################################################################################################
@@ -407,3 +418,153 @@ class TransMapGeneSetPlots(luigi.Task):
 
     def run(self):
         gene_set_plots(self.cfg)
+
+
+class AugustusGeneSetPlots(luigi.Task):
+    """
+    Analysis plots on how well transMap gene set finding did. Produced based on comparativeAnnotator output.
+    TODO: make this a individual luigi task for each plot
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        r = []
+        for cfg in self.cfg.cfgs:
+            if cfg.query_genome != cfg.target_genome:
+                r.append(TransMapGeneSet(cfg=cfg))
+        return r
+
+    def output(self):
+        r = [luigi.LocalTarget(self.cfg.transcript_biotype_plot), luigi.LocalTarget(self.cfg.gene_biotype_plot)]
+        for tm_plot in self.cfg.tm_gene_set_plots.itervalues():
+            for plot in tm_plot.plots:
+                r.append(luigi.LocalTarget(plot))
+        return r
+
+    def run(self):
+        gene_set_plots(self.cfg)
+
+
+########################################################################################################################
+########################################################################################################################
+## Augustus
+########################################################################################################################
+########################################################################################################################
+
+
+class RunAugustus(luigi.WrapperTask):
+    """
+    Wrapper for AugustusTMR.
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        yield ExtractIntronVector(cfg=self.cfg, target_file=self.cfg.tmr.vector_gp)
+        yield RunAugustusTMR(cfg=self.cfg)
+        yield ConvertGtfToGp(cfg=self.cfg, target_file=self.cfg.tmr.out_gp)
+        yield AugustusComparativeAnnotator(cfg=self.cfg)
+        yield ConvertGpToBed(cfg=self.cfg, target_file=self.cfg.tmr.tmr_bed)
+        yield ConvertBedToFa(cfg=self.cfg, target_file=self.cfg.tmr.tmr_fa)
+        yield AlignAugustus(cfg=self.cfg)
+
+
+class ExtractIntronVector(AbstractAtomicFileTask):
+    """
+    Extracts the intron vector information from transMap, producing a genePred with an extra column.
+    """
+    def requires(self):
+        return ComparativeAnnotator(cfg=self.cfg)
+
+    def run(self):
+        outf = self.output().open('w')
+        for line in find_intron_vector(self.cfg):
+            outf.write(line)
+        outf.close()
+
+
+class RunAugustusTMR(AbstractJobTreeTask):
+    """
+    Runs AugustusTM(R) on transcripts produced by transMap.
+    """
+    def requires(self):
+        return ExtractIntronVector(cfg=self.cfg, target_file=self.cfg.tmr.vector_gp)
+
+    def output(self):
+        return luigi.LocalTarget(self.cfg.tmr.out_gtf)
+
+    def run(self):
+        self.start_jobtree(self.cfg.tmr.run_tmr, augustus_tmr, norestart=self.cfg.args.norestart)
+
+
+class AugustusComparativeAnnotator(AbstractJobTreeTask):
+    """
+    Runs augustusComparativeAnnotator.
+    """
+    def requires(self):
+        return RunAugustusTMR(cfg=self.cfg)
+
+    def output(self):
+        r = []
+        genome = self.cfg.tmr.comp_ann_tm.genome
+        for table in [genome + '_Classify', genome + '_Details']:
+            r.append(RowsSqlTarget(self.cfg.tmr.comp_ann_tm.db, table, self.cfg.tmr.comp_ann_tm.augustus_gp))
+        return r
+
+    def run(self):
+        self.start_jobtree(self.cfg.tmr.comp_ann_tm, comp_ann_main, norestart=self.cfg.args.norestart)
+
+
+class ConvertGtfToGp(AbstractAtomicFileTask):
+    """
+    Converts the output GTF from Augustus TMR to genePred.
+    """
+    def requires(self):
+        return RunAugustusTMR(cfg=self.cfg)
+
+    def run(self):
+        cmd = ['gtfToGenePred', '-genePredExt', self.cfg.tmr.out_gtf, '/dev/stdout']
+        self.run_cmd(cmd)
+
+
+class ConvertGpToBed(AbstractAtomicFileTask):
+    """
+    Converts to BED
+    """
+    def requires(self):
+        return ConvertGtfToGp(cfg=self.cfg, target_file=self.cfg.tmr.out_gp)
+
+    def run(self):
+        cmd = ['genePredToBed', self.cfg.tmr.out_gp, '/dev/stdout']
+        self.run_cmd(cmd)
+
+
+class ConvertBedToFa(AbstractAtomicFileTask):
+    """
+    Converts the TMR genePred to fasta for alignment.
+    """
+    def requires(self):
+        return ConvertGpToBed(cfg=self.cfg, target_file=self.cfg.tmr.tmr_bed)
+
+    def run(self):
+        tmp_fa = luigi.LocalTarget(is_tmp=True)
+        cmd = ['fastaFromBed', '-bed', self.cfg.tmr.tmr_bed, '-fi', self.cfg.tmr.fasta, '-name',
+               '-split', '-s', '-fo', tmp_fa.path]
+        runProc(cmd)
+        self.atomic_install(tmp_fa)
+
+
+class AlignAugustus(AbstractJobTreeTask):
+    """
+    Aligns Augustus transcripts to reference, constructing the attributes table.
+    """
+    def requires(self):
+        return ConvertBedToFa(cfg=self.cfg)
+
+    def output(self):
+        table = self.cfg.comp_ann_tm.genome + '_Attributes'
+        return RowsSqlTarget(self.cfg.comp_ann_tm.db, table, self.cfg.comp_ann_tm.augustus_gp)
+
+    def run(self):
+        cmd = ['pyfasta', 'flatten', self.cfg.tmr.tmr_fa]
+        runProc(cmd)
+        self.start_jobtree(self.cfg.tmr.align, align_augustus)
