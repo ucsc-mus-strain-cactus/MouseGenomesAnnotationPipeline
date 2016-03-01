@@ -1,8 +1,6 @@
 """
 Run the pipeline
 """
-import os
-import argparse
 import luigi
 import itertools
 from pycbio.sys.procOps import runProc
@@ -335,8 +333,8 @@ class AugustusGeneSet(luigi.Task):
         return ComparativeAnnotator(cfg=self.cfg)
 
     def output(self):
-        return (luigi.LocalTarget(x) for x in itertools.chain(self.cfg.aug_geneset.out_gps.values(),
-                                                              self.cfg.aug_geneset.out_gtfs.values()))
+        return (luigi.LocalTarget(x) for x in itertools.chain(self.cfg.tmr.aug_geneset.out_gps.values(),
+                                                              self.cfg.tmr.aug_geneset.out_gtfs.values()))
 
     def convert_gp_to_gtf(self, gps, gtfs):
         for gp, gtf in zip(*[gps.itervalues(), gtfs.itervalues()]):
@@ -346,10 +344,10 @@ class AugustusGeneSet(luigi.Task):
             runProc(cmd)
 
     def run(self):
-        ensureDir(self.cfg.aug_geneset.out_dir)
-        ensureDir(self.cfg.aug_geneset.tmp_dir)
-        generate_consensus(self.cfg.aug_geneset)
-        self.convert_gp_to_gtf(self.cfg.aug_geneset.out_gps, self.cfg.aug_geneset.out_gtfs)
+        ensureDir(self.cfg.tmr.aug_geneset.out_dir)
+        ensureDir(self.cfg.tmr.aug_geneset.tmp_dir)
+        generate_consensus(self.cfg.tmr.aug_geneset)
+        self.convert_gp_to_gtf(self.cfg.tmr.aug_geneset.out_gps, self.cfg.tmr.aug_geneset.out_gtfs)
 
 
 ########################################################################################################################
@@ -506,7 +504,7 @@ class AugustusComparativeAnnotator(AbstractJobTreeTask):
     def output(self):
         r = []
         genome = self.cfg.tmr.comp_ann_tm.genome
-        for table in [genome + '_Classify', genome + '_Details']:
+        for table in [genome + '_AugustusClassify', genome + '_AugustusDetails']:
             r.append(RowsSqlTarget(self.cfg.tmr.comp_ann_tm.db, table, self.cfg.tmr.comp_ann_tm.augustus_gp))
         return r
 
@@ -561,7 +559,7 @@ class AlignAugustus(AbstractJobTreeTask):
         return ConvertBedToFa(cfg=self.cfg)
 
     def output(self):
-        table = self.cfg.comp_ann_tm.genome + '_Attributes'
+        table = self.cfg.target_genome + '_AugustusAttributes'
         return RowsSqlTarget(self.cfg.comp_ann_tm.db, table, self.cfg.comp_ann_tm.augustus_gp)
 
     def run(self):

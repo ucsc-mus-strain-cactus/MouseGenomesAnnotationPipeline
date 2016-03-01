@@ -56,7 +56,7 @@ def parse_args():
     Build argparse object, parse arguments. See the parsing library for a lot of the features used here.
     """
     parser = FileArgumentParser(description=__doc__)
-    parser.add_argument('--geneSets', action=NamespaceAction, required=True, metavar='KEY=VALUE',
+    parser.add_argument('--geneSets', action=NamespaceAction, nargs=4, required=True, metavar='KEY=VALUE',
                         help='Input gene sets. Expects groups of four key-value pairs in the format --geneSets '
                              'geneSet=Ensembl sourceGenome=C_elegans genePred=testdata/c_elegans.transcripts.gp '
                              'attributesTsv=testdata/ce11.ensembl.attributes.tsv')
@@ -158,4 +158,4 @@ def extract_newick_genomes_cactus(cactus_config):
 
 if __name__ == '__main__':
     args = parse_args()
-    luigi.build([RunPipeline(args)], local_scheduler=True, workers=args.localCores)
+    #luigi.build([RunPipeline(args)], local_scheduler=True, workers=args.localCores)

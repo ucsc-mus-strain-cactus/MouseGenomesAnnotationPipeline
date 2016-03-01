@@ -37,7 +37,8 @@ def get_genes(database, gencode_version, gencode_set, name, out_dir, include_chr
 def build_attributes(database, gencode_version, name, out_dir):
     header = '\t'.join(['GeneId', 'GeneName', 'GeneType', 'TranscriptId', 'TranscriptType']) + '\n'
     cmd = ['hgsql', '-Ne',
-           'select geneId,geneName,geneType,transcriptId,transcriptType from wgEncodeGencodeAttrs{}'.format(gencode_version),
+           'select geneId,geneName,geneType,transcriptId,transcriptType from '
+           'wgEncodeGencodeAttrs{}'.format(gencode_version),
            database]
     with open(os.path.join(out_dir, name + '.tsv'), 'w') as outf:
         outf.write(header)

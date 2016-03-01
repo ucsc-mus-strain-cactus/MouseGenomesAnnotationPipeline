@@ -5,6 +5,7 @@ Library of parsing things related to argparse.
 import argparse
 import os
 import errno
+from collections import defaultdict
 
 
 class HashableNamespace(argparse.Namespace):
@@ -25,10 +26,11 @@ class NamespaceAction(argparse.Action):
 
     This modified action allows me to group together the four key-value pairs passed to --geneSets as a nested
     namespace.
+    Extended to produce a defaultdict(list) if requested, so that a key can appear more than once.
     """
     def __init__(self, *args, **kwargs):
+        self.mode = kwargs.pop('mode', 'dict')  # Will use 'dict' as default
         super(NamespaceAction, self).__init__(*args, **kwargs)
-        self.nargs = 4
 
     def __call__(self, parser, namespace, values, option_string=None):
         # The default value is often set to None rather than an empty list.
@@ -36,7 +38,17 @@ class NamespaceAction(argparse.Action):
         setattr(namespace, self.dest, current_arg_vals)
         arg_vals = getattr(namespace, self.dest)
         try:
-            arg_vals.append(HashableNamespace(**dict(v.split('=') for v in values)))
+            if self.mode == 'dict':
+                arg_vals.append(HashableNamespace(**dict(v.split('=') for v in values)))
+            elif self.mode == 'defaultdict':
+                d = defaultdict(list)
+                for v in values:
+                    v = v.split('=')
+                    d[v[0]].append(v[1])
+                df = {x: tuple(y) for x, y in d.iteritems()}
+                arg_vals.append(HashableNamespace(**df))
+            else:
+                raise NotImplementedError("only dict or defaultdict")
         except TypeError:
             raise RuntimeError('Group {} appears to be incorrectly formatted'.format(values))
 
