@@ -10,7 +10,7 @@ os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/com
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
 from pycbio.sys.fileOps import iterRows
 from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator,\
-    ComparativeAnnotator, AugustusComparativeAnnotator, TransMapAnalysis
+    ComparativeAnnotator, AugustusComparativeAnnotator, TransMapAnalysis, TransMapGeneSet, TransMapGeneSetPlots
 from config import QueryTargetConfiguration, AnalysesConfiguration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
@@ -39,15 +39,15 @@ class RunPipeline(luigi.WrapperTask):
                     yield ChainFiles(cfg)
                     yield TransMap(cfg)
                     yield ComparativeAnnotator(cfg)
-            for biotype in gene_set.biotypes:
-                analyses_cfg = AnalysesConfiguration(self.params, tuple(cfgs), gene_set, biotype)
-                yield TransMapAnalysis(analyses_cfg)
+                    yield TransMapGeneSet(cfg)
+            analyses_cfg = AnalysesConfiguration(self.params, tuple(cfgs), gene_set)
+            yield TransMapAnalysis(analyses_cfg)
+            yield TransMapGeneSetPlots(cfgs, analyses_cfg)
 
 
 def parse_args():
     """
     Build argparse object, parse arguments. See the parsing library for a lot of the features used here.
-    TODO: need to error check that all geneSets variables are correct
     """
     parser = FileArgumentParser(description=__doc__)
     parser.add_argument('--geneSets', action=NamespaceAction, required=True, metavar='KEY=VALUE',
@@ -104,6 +104,7 @@ def parse_args():
     args.jobTreeOptions.jobTree = None
     # manually check that all geneSet files exist because my fancy FileArgumentParser can't do this
     for geneSet in args.geneSets:
+        assert all([x in geneSet for x in ['geneSet', 'sourceGenome', 'genePred', 'attributesTsv']])
         assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(geneSet.genePred)
         assert os.path.exists(geneSet.attributesTsv), 'Error: attributes file {} missing.'.format(geneSet.attributesTsv)
     return args
@@ -123,7 +124,7 @@ def build_genome_order(newick_str, ref_genome):
     Takes a newick format string and a single genome and reports the genetic distance of each genome in the tree
     from the reference genome. Used to order plots from closest to furthest from the source genome.
     """
-    t = ete3.Tree(newick_str)
+    t = ete3.Tree(newick_str, format=1)
     distances = [[t.get_distance(ref_genome, x), x.name] for x in t if x.name != ref_genome]
     ordered = sorted(distances, key=lambda (dist, name): dist)
     distances, ordered_names = zip(*ordered)

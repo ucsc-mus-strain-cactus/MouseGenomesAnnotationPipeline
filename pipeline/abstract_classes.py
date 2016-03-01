@@ -155,6 +155,9 @@ class RowsSqlTarget(luigi.Target):
         # input files may not have been created yet
         if not os.path.exists(self.input_file):
             return False
+        # input files may exist but be empty, resulting in the table not being produced. This is expected.
+        if os.path.getsize(self.input_file) == 0:
+            return True
         # database may have not been created yet
         if not os.path.exists(self.db_path):
             return False

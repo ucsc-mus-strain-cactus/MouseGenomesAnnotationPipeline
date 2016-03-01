@@ -4,6 +4,7 @@ Run the pipeline
 import os
 import argparse
 import luigi
+import itertools
 from pycbio.sys.procOps import runProc
 from pycbio.sys.fileOps import ensureDir
 from lib.ucsc_chain_net import chainNetStartup
@@ -12,6 +13,8 @@ from abstract_classes import RowsSqlTarget
 from comparativeAnnotator.annotation_pipeline import main as comp_ann_main
 from comparativeAnnotator.plotting.transmap_analysis import paralogy_plot, cov_plot, ident_plot, num_pass_excel,\
     num_pass_excel_gene_level
+from comparativeAnnotator.generate_gene_set import generate_consensus
+from comparativeAnnotator.plotting.gene_set_plots import gene_set_plots
 
 ########################################################################################################################
 ########################################################################################################################
@@ -137,7 +140,7 @@ class TranscriptFasta(AbstractAtomicFileTask):
 
     def requires(self):
         return (TranscriptBed(cfg=self.cfg, target_file=self.cfg.bed),
-                GenomeFasta(cfg=self.cfg, target_file=self.genome_cfg.genome_fasta))
+                GenomeFasta(cfg=self.genome_cfg, target_file=self.genome_cfg.genome_fasta))
 
     def run(self):
         bed_target, genome_fasta = self.requires()
@@ -305,6 +308,33 @@ class AugustusComparativeAnnotator(AbstractJobTreeTask):
 
 ########################################################################################################################
 ########################################################################################################################
+## gene sets
+########################################################################################################################
+########################################################################################################################
+
+
+class TransMapGeneSet(luigi.Task):
+    """
+    Produces a gff and gp of a consensus gene set for just transMap output.
+    TODO: this should be split up into individual tasks, which have a guarantee of atomicity.
+    """
+    cfg = luigi.Parameter()
+
+    def requires(self):
+        return ComparativeAnnotator(cfg=self.cfg)
+
+    def output(self):
+        return (luigi.LocalTarget(x) for x in itertools.chain(self.cfg.geneset.out_gps.values(),
+                                                              self.cfg.geneset.out_gffs.values()))
+
+    def run(self):
+        ensureDir(self.cfg.geneset.out_dir)
+        ensureDir(self.cfg.geneset.tmp_dir)
+        generate_consensus(self.cfg.geneset)
+
+
+########################################################################################################################
+########################################################################################################################
 ## combined plots
 ########################################################################################################################
 ########################################################################################################################
@@ -327,14 +357,46 @@ class TransMapAnalysis(luigi.Task):
         return r
 
     def output(self):
-        return (luigi.LocalTarget(p) for p in self.cfg.tm_plots.plots)
+        r = []
+        for tm_plot in self.cfg.tm_plots:
+            for plot in tm_plot.plots:
+                r.append(luigi.LocalTarget(plot))
+        return r
 
     def run(self):
-        tm_cfg = self.cfg.tm_plots
-        paralogy_plot(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.para_plot, self.cfg.db)
-        cov_plot(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.cov_plot, self.cfg.db)
-        ident_plot(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.ident_plot, self.cfg.db)
-        num_pass_excel(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype, tm_cfg.num_pass_excel,
-                       self.cfg.db, self.cfg.args.filterChroms)
-        num_pass_excel_gene_level(self.cfg.target_genomes, self.cfg.query_genome, self.cfg.biotype,
-                                  tm_cfg.num_pass_excel_gene, self.cfg.db, self.cfg.args.filterChroms)
+        for biotype, tm_cfg in zip(*[self.cfg.biotypes, self.cfg.tm_plots]):
+            ensureDir(tm_cfg.out_dir)
+            paralogy_plot(self.cfg.target_genomes, self.cfg.query_genome, biotype, tm_cfg.para_plot, 
+                          self.cfg.db)
+            cov_plot(self.cfg.target_genomes, self.cfg.query_genome, biotype, tm_cfg.cov_plot, self.cfg.db)
+            ident_plot(self.cfg.target_genomes, self.cfg.query_genome, biotype, tm_cfg.ident_plot, self.cfg.db)
+            num_pass_excel(self.cfg.target_genomes, self.cfg.query_genome, biotype, tm_cfg.num_pass_excel,
+                           self.cfg.db, self.cfg.args.filterChroms)
+            num_pass_excel_gene_level(self.cfg.target_genomes, self.cfg.query_genome, biotype,
+                                      tm_cfg.num_pass_excel_gene, self.cfg.db, self.cfg.args.filterChroms)
+
+
+class TransMapGeneSetPlots(luigi.Task):
+    """
+    Analysis plots on how well transMap gene set finding did. Produced based on comparativeAnnotator output.
+    TODO: make this a individual luigi task for each plot
+    """
+    analyses_cfg = luigi.Parameter()
+
+    def requires(self):
+        r = []
+        for cfg in self.cfg.cfgs:
+            if cfg.query_genome != cfg.target_genome:
+                r.append(TransMapGeneSet(cfg=cfg))
+        return r
+
+    def output(self):
+        r = [luigi.LocalTarget(self.cfg.biotype_stacked_plot)]
+        for tm_plot in self.cfg.tm_gene_set_plots:
+            for plot in tm_plot.plots:
+                r.append(luigi.LocalTarget(plot))
+        return r
+
+    def run(self):
+        for biotype, plot_cfg in zip(*[self.cfg.biotypes, self.cfg.tm_gene_set_plots]):
+            gene_set_plots(plot_cfg)
