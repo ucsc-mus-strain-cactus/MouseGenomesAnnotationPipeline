@@ -315,7 +315,7 @@ class AugustusComparativeAnnotator(AbstractJobTreeTask):
 
 class TransMapGeneSet(luigi.Task):
     """
-    Produces a gff and gp of a consensus gene set for just transMap output.
+    Produces a gtf and gp of a consensus gene set for just transMap output.
     TODO: this should be split up into individual tasks, which have a guarantee of atomicity.
     """
     cfg = luigi.Parameter()
@@ -325,12 +325,20 @@ class TransMapGeneSet(luigi.Task):
 
     def output(self):
         return (luigi.LocalTarget(x) for x in itertools.chain(self.cfg.geneset.out_gps.values(),
-                                                              self.cfg.geneset.out_gffs.values()))
+                                                              self.cfg.geneset.out_gtfs.values()))
+
+    def convert_gp_to_gtf(self, gps, gtfs):
+        for gp, gtf in zip(*[gps.itervalues(), gtfs.itervalues()]):
+            s = self.cfg.geneset.gene_set_name
+            cmd = [['bin/fixGenePredScore', gp],
+                   ['genePredToGtf', '-source={}'.format(s), '-honorCdsStat', '-utr', 'file', '/dev/stdin', gtf]]
+            runProc(cmd)
 
     def run(self):
         ensureDir(self.cfg.geneset.out_dir)
         ensureDir(self.cfg.geneset.tmp_dir)
         generate_consensus(self.cfg.geneset)
+        self.convert_gp_to_gtf(self.cfg.geneset.out_gps, self.cfg.geneset.out_gtfs)
 
 
 ########################################################################################################################
@@ -358,13 +366,13 @@ class TransMapAnalysis(luigi.Task):
 
     def output(self):
         r = []
-        for tm_plot in self.cfg.tm_plots:
+        for tm_plot in self.cfg.tm_plots.itervalues():
             for plot in tm_plot.plots:
                 r.append(luigi.LocalTarget(plot))
         return r
 
     def run(self):
-        for biotype, tm_cfg in zip(*[self.cfg.biotypes, self.cfg.tm_plots]):
+        for biotype, tm_cfg in self.cfg.tm_plots.iteritems():
             ensureDir(tm_cfg.out_dir)
             paralogy_plot(self.cfg.target_genomes, self.cfg.query_genome, biotype, tm_cfg.para_plot, 
                           self.cfg.db)
@@ -381,7 +389,7 @@ class TransMapGeneSetPlots(luigi.Task):
     Analysis plots on how well transMap gene set finding did. Produced based on comparativeAnnotator output.
     TODO: make this a individual luigi task for each plot
     """
-    analyses_cfg = luigi.Parameter()
+    cfg = luigi.Parameter()
 
     def requires(self):
         r = []
@@ -391,12 +399,11 @@ class TransMapGeneSetPlots(luigi.Task):
         return r
 
     def output(self):
-        r = [luigi.LocalTarget(self.cfg.biotype_stacked_plot)]
-        for tm_plot in self.cfg.tm_gene_set_plots:
+        r = [luigi.LocalTarget(self.cfg.transcript_biotype_plot), luigi.LocalTarget(self.cfg.gene_biotype_plot)]
+        for tm_plot in self.cfg.tm_gene_set_plots.itervalues():
             for plot in tm_plot.plots:
                 r.append(luigi.LocalTarget(plot))
         return r
 
     def run(self):
-        for biotype, plot_cfg in zip(*[self.cfg.biotypes, self.cfg.tm_gene_set_plots]):
-            gene_set_plots(plot_cfg)
+        gene_set_plots(self.cfg)

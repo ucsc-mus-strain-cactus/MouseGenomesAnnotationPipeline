@@ -42,7 +42,7 @@ class RunPipeline(luigi.WrapperTask):
                     yield TransMapGeneSet(cfg)
             analyses_cfg = AnalysesConfiguration(self.params, tuple(cfgs), gene_set)
             yield TransMapAnalysis(analyses_cfg)
-            yield TransMapGeneSetPlots(cfgs, analyses_cfg)
+            yield TransMapGeneSetPlots(analyses_cfg)
 
 
 def parse_args():

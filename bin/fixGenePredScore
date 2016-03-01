@@ -1,0 +1,12 @@
+#!/bin/env python
+"""
+Simple script that converts my hacked genePreds to legal genePreds which can be converted to
+bigGenePred or GTF.
+The problem is that I use the score field (field 11) as a way of storing unique identifiers.
+This script fixes that.
+"""
+import sys
+for line in open(sys.argv[1]):
+    line = line.rstrip().split()
+    line[10] = '1'
+    sys.stdout.write('\t'.join(line) +'\n')

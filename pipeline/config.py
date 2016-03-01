@@ -150,10 +150,11 @@ class TransMapGeneSet(HashableNamespace):
         self.db_path = comp_ann.db
         self.biotypes = gene_set.biotypes
         self.mode = 'transMap'
+        self.gene_set_name = gene_set.geneSet
         self.out_dir = os.path.join(args.outputDir, 'transMap_gene_set', gene_set.sourceGenome, gene_set.geneSet,
                                     self.genome)
         self.out_gps = frozendict((x, os.path.join(self.out_dir, x + '.gp')) for x in gene_set.biotypes)
-        self.out_gffs = frozendict((x, os.path.join(self.out_dir, x + '.gff')) for x in gene_set.biotypes)
+        self.out_gtfs = frozendict((x, os.path.join(self.out_dir, x + '.gtf')) for x in gene_set.biotypes)
         self.tmp_dir = os.path.join(args.workDir, 'transMap_gene_set_metrics', gene_set.sourceGenome, gene_set.geneSet)
         self.tmp_pickle = os.path.join(self.tmp_dir, self.genome + '.metrics.pickle')
 
@@ -196,9 +197,17 @@ class AnalysesConfiguration(HashableNamespace):
         self.db = os.path.join(args.workDir, 'comparativeAnnotator', gene_set.sourceGenome, gene_set.geneSet,
                                'classification.db')
         self.gene_set = gene_set
-        self.tm_plots = tuple([TransMapPlots(args, gene_set, b) for b in self.biotypes])
-        self.tm_gene_set_plots = tuple([TransMapGeneSetPlots(args, gene_set, b) for b in self.biotypes])
-        self.biotype_stacked_plot = os.path.join(args.outputDir, 'transMap_GeneSet_plots')
+        self.tm_plots = frozendict([b, TransMapPlots(args, gene_set, b)] for b in self.biotypes)
+        self.gene_set_plot_dir = os.path.join(args.outputDir, 'transMap_GeneSet_plots')
+        self.gene_biotype_plot = os.path.join(self.gene_set_plot_dir, 'gene_biotype_stacked_plot.pdf')
+        self.transcript_biotype_plot = os.path.join(self.gene_set_plot_dir, 'transcript_biotype_stacked_plot.pdf')
+        self.tm_gene_set_plots = frozendict([b, TransMapGeneSetPlots(args, gene_set, b, self.gene_set_plot_dir)]
+                                            for b in self.biotypes)
+        self.pickle_dir = os.path.join(args.workDir, 'transMap_gene_set_metrics', gene_set.sourceGenome,
+                                       gene_set.geneSet)
+
+    def __repr__(self):
+        return 'AnalysesConfiguration: {}-{}'.format(self.gene_set.sourceGenome, self.gene_set.geneSet)
 
 
 class TransMapPlots(HashableNamespace):
@@ -225,14 +234,16 @@ class TransMapGeneSetPlots(HashableNamespace):
     Takes the initial configuration from the main driver script and builds paths to all files that will be produced
     by these tasks.
     """
-    def __init__(self, args, gene_set, biotype):
+    def __init__(self, args, gene_set, biotype, gene_set_plot_dir):
         self.args = args
         self.gene_set = gene_set
         self.biotype = biotype
-        self.out_dir = os.path.join(args.outputDir, 'transMap_GeneSet_plots', biotype)
-        self.tx_gene_plot = os.path.join(self.out_dir, biotype + '_transcript_gene_plot.pdf')
-        self.fail_plot = os.path.join(self.out_dir, biotype + '_gene_fail_plot.pdf')
-        self.dup_rate_plot = os.path.join(self.out_dir, biotype + '_dup_rate_plot.pdf')
-        self.size_plot = os.path.join(self.out_dir, biotype + '_size_plot.pdf')
-        self.plots = tuple([self.tx_gene_plot, self.fail_plot, self.dup_rate_plot, self.size_plot])
-        self.tmp_dir = os.path.join(args.workDir, 'transMap_gene_set_metrics', gene_set.sourceGenome, gene_set.geneSet)
+        self.out_dir = gene_set_plot_dir
+        self.tx_plot = os.path.join(self.out_dir, biotype, biotype + '_transcript_plot.pdf')
+        self.gene_plot = os.path.join(self.out_dir, biotype, biotype + '_gene_plot.pdf')
+        self.size_plot = os.path.join(self.out_dir, biotype, biotype + '_transcript_size_plot.pdf')
+        self.gene_size_plot = os.path.join(self.out_dir, biotype, biotype + '_gene_size_plot.pdf')
+        self.fail_plot = os.path.join(self.out_dir, biotype, biotype + '_gene_fail_plot.pdf')
+        self.dup_rate_plot = os.path.join(self.out_dir, biotype, biotype + '_dup_rate_plot.pdf')
+        self.plots = tuple([self.tx_plot, self.gene_plot, self.size_plot, self.gene_size_plot, self.fail_plot,
+                            self.dup_rate_plot])
