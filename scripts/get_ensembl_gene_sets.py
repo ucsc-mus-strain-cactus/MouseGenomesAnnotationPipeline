@@ -27,6 +27,7 @@ def get_genes(database, name, out_dir, include_chroms):
             l += 'chrom = "{}" and '.format(c)
         l += 'chrom = "{}"'.format(include_chroms[-1])
         cmd = ['hgsql', '-Ne', l, database]
+    cmd = [cmd, ['cut', '-f', '2-']]  # strip bin name
     with open(os.path.join(out_dir, name + '.gp'), 'w') as outf:
         runProc(cmd, stdout=outf)
 
