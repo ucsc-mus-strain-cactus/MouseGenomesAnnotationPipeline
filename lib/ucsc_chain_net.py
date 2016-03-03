@@ -20,7 +20,7 @@ def getGlobalTempPath(target, *parts):
 
 def makeChromBedTmp(target, hal, chrom, chromSize):
     "create a BED file in local tmp covering one chromosome"
-    bedFile = getLocalTempPath(target, chrom, "bed")
+    bedFile = getGlobalTempPath(target, chrom, "bed")
     with open(bedFile, "w") as fh:
         fileOps.prRowv(fh, chrom, 0, chromSize)
     return bedFile
@@ -53,9 +53,14 @@ def chainChromTarget(target, hal, queryGenome, queryChromSize, queryTwoBit, quer
     "target to chain one chromosome"
     queryBed = makeChromBedTmp(target, hal, queryChrom, queryChromSize)
     #  --inMemory caused out of memory in with some alignments with 31G allocated
-    procOps.callProc([["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
-                      ["pslPosTarget", "/dev/stdin", "/dev/stdout"],
-                      ["axtChain", "-psl", "-verbose=0", "-linearGap=medium", "/dev/stdin", targetTwoBit, queryTwoBit, chainFile]])
+    try:
+        procOps.callProc([["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
+                          ["pslPosTarget", "/dev/stdin", "/dev/stdout"],
+                          ["axtChain", "-psl", "-verbose=0", "-linearGap=medium", "/dev/stdin", targetTwoBit, queryTwoBit, chainFile]])
+    except:
+        assert False, [["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
+                          ["pslPosTarget", "/dev/stdin", "/dev/stdout"],
+                          ["axtChain", "-psl", "-verbose=0", "-linearGap=medium", "/dev/stdin", targetTwoBit, queryTwoBit, chainFile]]
 
 def chainChromMakeChildren(target, hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit):
     "create child jobs to do per-chrom chaining"
@@ -104,6 +109,7 @@ def chainNetTarget(target, hal, queryGenome, queryTwoBit, targetGenome, targetTw
 def chainNetStartup(opts):
     "entry to start jobtree"
     # FIXME: should generate an exception
+    assert all([os.path.exists(x) for x in [opts.hal, opts.queryTwoBit, opts.targetTwoBit]])
     target = Target.makeTargetFn(chainNetTarget, (opts.hal, opts.queryGenome, opts.queryTwoBit, opts.targetGenome, 
                                                   opts.targetTwoBit, opts.chainFile, opts.netFile))
     failures = Stack(target).startJobTree(opts)

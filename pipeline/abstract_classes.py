@@ -13,7 +13,7 @@ import os
 from jobTree.src.jobTreeStatus import parseJobFiles
 from jobTree.src.master import getJobFileDirName
 from pycbio.sys.procOps import runProc
-from pycbio.sys.fileOps import ensureDir, rmTree, iterRows
+from pycbio.sys.fileOps import ensureDir, rmTree, iterRows, atomicInstall
 from pycbio.sys.sqliteOps import open_database, execute_query
 
 ########################################################################################################################
@@ -41,20 +41,18 @@ class AbstractAtomicFileTask(luigi.Task):
         runProc(cmd, stdout=out_h)
         out_h.close()
 
-    def atomic_install(self, target, force_copy=False):
+    def atomic_install(self, target):
         """
-        Atomically install a given target to this task's output. If we cross filesystem boundaries, we need to copy
-        before renaming. Set force_copy to skip this checking and just copy the file.
+        Atomically install a given target to this task's output.
         """
         output = self.output()
         output.makedirs()
-        source_dir = os.path.dirname(os.path.abspath(output.path))
-        target_dir = os.path.dirname(os.path.abspath(target.path))
-        # if we are moving across filesystem barriers, then we have to copy. Otherwise, we can just move.
-        if force_copy is True or os.stat(source_dir).st_dev != os.stat(target_dir).st_dev:
-            target.copy(output.path)
+        if isinstance(target, luigi.LocalTarget):
+            atomicInstall(target.path, output.path)
+        elif isinstance(target, str):
+            atomicInstall(target, output.path)
         else:
-            target.move(output.path)
+            raise NotImplementedError
 
 
 class AbstractAtomicManyFileTask(luigi.Task):
@@ -73,18 +71,17 @@ class AbstractAtomicManyFileTask(luigi.Task):
     def run_cmd(self, cmd, tmp_files):
         """
         Run a external command that will produce the output file for this task to many files.
-        These files will be atomically installed using functionality in luigi.localTarget
-        Assumes that tmp_files are in the same order as in target_files.
+        These files will be atomically installed.
         """
         runProc(cmd)
         for tmp_f, f in zip(*(tmp_files, self.output())):
             f.makedirs()
-            source_dir = os.path.dirname(os.path.abspath(tmp_f.path))
-            target_dir = os.path.dirname(os.path.abspath(f.path))
-            if os.stat(source_dir).st_dev != os.stat(target_dir).st_dev:
-                tmp_f.copy(f.path)
+            if isinstance(tmp_f, luigi.LocalTarget):
+                atomicInstall(tmp_f.path, f.path)
+            elif isinstance(tmp_f, str):
+                atomicInstall(tmp_f, f.path)
             else:
-                tmp_f.move(f.path)
+                raise NotImplementedError
 
 
 class AbstractJobTreeTask(luigi.Task):
@@ -146,10 +143,10 @@ class AbstractJobTreeTask(luigi.Task):
 
 class RowsSqlTarget(luigi.Target):
     """
-    Checks that the table at db_path has num_rows rows.
+    Checks that the table at db has num_rows rows.
     """
-    def __init__(self, db_path, table, input_file):
-        self.db_path = db_path
+    def __init__(self, db, table, input_file):
+        self.db = db
         self.table = table
         self.input_file = input_file
 
@@ -164,9 +161,9 @@ class RowsSqlTarget(luigi.Target):
         if os.path.getsize(self.input_file) == 0:
             return True
         # database may have not been created yet
-        if not os.path.exists(self.db_path):
+        if not os.path.exists(self.db):
             return False
-        con, cur = open_database(self.db_path)
+        con, cur = open_database(self.db)
         # check if table exists
         query = 'SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'.format(self.table)
         if len(execute_query(cur, query).fetchall()) != 1:

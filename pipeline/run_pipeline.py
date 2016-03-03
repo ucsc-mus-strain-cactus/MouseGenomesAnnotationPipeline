@@ -9,10 +9,10 @@ import argparse
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
 from pycbio.sys.fileOps import iterRows
+from pycbio.sys.procOps import callProcLines
 from pipeline import GenomeFiles, AnnotationFiles, ChainFiles, TransMap, ReferenceComparativeAnnotator,\
-    ComparativeAnnotator, RunAugustus, TransMapAnalysis, TransMapGeneSet, AugustusGeneSet, \
-    TransMapGeneSetPlots, AugustusGeneSetPlots
-from config import QueryTargetConfiguration, AnalysesConfiguration
+    ComparativeAnnotator, RunAugustus, TransMapAnalysis, GeneSet, GeneSetPlots
+from config import PipelineConfiguration
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from jobTree.scriptTree.stack import Stack
 
@@ -24,31 +24,24 @@ class RunPipeline(luigi.WrapperTask):
     params = luigi.Parameter()
 
     def requires(self):
-        cfgs = []
         for gene_set in self.params.geneSets:
-            # in cases where the user specifies a subset of target genomes, re-add the source genome to the set.
-            target_genomes = set(self.params.targetGenomes)
-            target_genomes.add(gene_set.sourceGenome)
-            for target_genome in target_genomes:
-                cfg = QueryTargetConfiguration(self.params, gene_set.sourceGenome, target_genome, gene_set)
-                cfgs.append(cfg)
-                yield GenomeFiles(cfg)
-                yield AnnotationFiles(cfg)
-                if target_genome == gene_set.sourceGenome:
-                    yield ReferenceComparativeAnnotator(cfg)
-                else:
-                    yield ChainFiles(cfg)
-                    yield TransMap(cfg)
-                    yield ComparativeAnnotator(cfg)
-                    yield TransMapGeneSet(cfg)
-                    if self.params.augustus is True:
-                        yield RunAugustus(cfg)
-                        yield AugustusGeneSet(cfg)
-            analyses_cfg = AnalysesConfiguration(self.params, tuple(cfgs), gene_set)
-            yield TransMapAnalysis(analyses_cfg)
-            yield TransMapGeneSetPlots(analyses_cfg)
+            # in cases where the user does not specifies a subset of target genomes, remove source
+            cfg = PipelineConfiguration(self.params, gene_set)
+            yield AnnotationFiles(cfg.query_cfg)
+            yield ReferenceComparativeAnnotator(cfg.query_cfg)
+            for target_genome, query_target_cfg in cfg.query_target_cfgs.iteritems():
+                yield GenomeFiles(query_target_cfg)
+                yield ChainFiles(query_target_cfg)
+                yield TransMap(query_target_cfg)
+                yield ComparativeAnnotator(query_target_cfg)
+                yield GeneSet(query_target_cfg)
+                if self.params.augustus is True:
+                    yield RunAugustus(cfg.augustus_cfgs[target_genome])
+                    yield GeneSet(cfg.augustus_cfgs[target_genome])
+            yield TransMapAnalysis(cfg)
+            yield GeneSetPlots(cfg, mode='transMap')
             if self.params.augustus is True:
-                yield AugustusGeneSetPlots(analyses_cfg)
+                yield GeneSetPlots(cfg, mode='augustus')
 
 
 def parse_args():
@@ -65,11 +58,11 @@ def parse_args():
                              'If not set, all non-reference genomes will be annotated.')
     parser.add_argument_with_mkdir_p('--workDir', default='work', metavar='DIR',
                                      help='Work directory. Will contain intermediate files that may be useful.')
+    parser.add_argument_with_mkdir_p('--jobTreeDir', default='jobTrees', metavar='DIR',
+                                     help='Directory where jobTrees will be run. Should be visible to cluster nodes.')
     parser.add_argument_with_mkdir_p('--outputDir', default='output', metavar='DIR', help='Output directory.')
     parser.add_argument_with_check('--hal', required=True, metavar='FILE',
                                    help='HAL alignment file produced by progressiveCactus')
-    parser.add_argument_with_check('--cactusConfig', required=True, metavar='FILE',
-                                   help='progressiveCactus configuration file used to generate the HAL alignment file.')
     parser.add_argument('--localCores', default=12, metavar='INT',
                         help='Number of local cores to use. (default: %(default)d)')
     parser.add_argument_with_check('--augustusHints', default=None, metavar='FILE',
@@ -97,7 +90,7 @@ def parse_args():
     args = parser.parse_args(namespace=HashableNamespace())
     args.jobTreeOptions = jobtree_parser.parse_known_args(namespace=HashableNamespace())[0]
     # modify args to have newick string and list of all genomes
-    newick_str, genomes = extract_newick_genomes_cactus(args.cactusConfig)
+    newick_str, genomes = extract_newick_genomes_cactus(args.hal)
     args.genomes = genomes
     if args.targetGenomes is None:
         args.targetGenomes = genomes
@@ -108,11 +101,8 @@ def parse_args():
     for gene_set in args.geneSets:
         gene_set.orderedTargetGenomes = build_genome_order(newick_str, gene_set.sourceGenome)
         gene_set.biotypes = get_biotypes_from_attrs(gene_set.attributesTsv)
-    # set directory that jobTrees will be made in
-    args.jobTreeDir = os.path.join(args.workDir, 'jobTrees')
     # if batchSystem/parasolCommand are not supplied on the command line, they will be the jobTree defaults. Fix this.
-    args.jobTreeOptions.batchSystem = args.batchSystem
-    args.jobTreeOptions.parasolCommand = args.parasolCommand
+    args.jobTreeOptions.__dict__.update({x: y for x, y in vars(args).iteritems() if x in args.jobTreeOptions})
     # make the default jobTree dir None so that it crashes if I am stupid
     args.jobTreeOptions.jobTree = None
     # manually check that all geneSet files exist because my fancy FileArgumentParser can't do this
@@ -121,7 +111,7 @@ def parse_args():
         assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(geneSet.genePred)
         assert os.path.exists(geneSet.attributesTsv), 'Error: attributes file {} missing.'.format(geneSet.attributesTsv)
     if args.augustusGenomes is None:
-        args.augustusGenomes = tuple(args.targetGenomes)  # TODO: not hashable?
+        args.augustusGenomes = args.targetGenomes
     return args
 
 
@@ -146,16 +136,17 @@ def build_genome_order(newick_str, ref_genome):
     return ordered_names
 
 
-def extract_newick_genomes_cactus(cactus_config):
+def extract_newick_genomes_cactus(hal):
     """
     Parse the cactus config file, extracting just the newick tree
     """
-    f_h = open(cactus_config)
-    newick = f_h.next().rstrip()
-    genomes = tuple(x.split()[0] for x in f_h)
+    cmd = ['halStats', '--tree', hal]
+    newick = callProcLines(cmd)[0]
+    t = ete3.Tree(newick, format=1)
+    genomes = tuple(t.get_leaf_names())
     return newick, genomes
 
 
 if __name__ == '__main__':
     args = parse_args()
-    #luigi.build([RunPipeline(args)], local_scheduler=True, workers=args.localCores)
+    luigi.build([RunPipeline(args)], local_scheduler=True, workers=args.localCores)

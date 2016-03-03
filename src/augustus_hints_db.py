@@ -57,7 +57,7 @@ def group_references(sam_handle, num_bases=20 ** 7, max_seqs=100):
             this_bin.append(name)
 
 
-def main_hints_fn(target, bam_paths, db_path, genome, genome_fasta, hints_dir):
+def main_hints_fn(target, bam_paths, db, genome, genome_fasta, hints_dir):
     """
     Main driver function. Loops over each BAM, inferring paired-ness, then passing each BAM with one chromosome name
     for filtering. Each BAM will remain separated until the final concatenation and sorting of the hint gffs.
@@ -70,7 +70,7 @@ def main_hints_fn(target, bam_paths, db_path, genome, genome_fasta, hints_dir):
             out_filter = filtered_bam_tree.getTempFile(suffix=".bam")
             target.addChildTargetFn(sort_by_name, memory=8 * 1024 ** 3, cpu=2,
                                     args=[bam_path, references, out_filter, paired])
-    target.setFollowOnTargetFn(build_hints, args=[filtered_bam_tree, genome, db_path, genome_fasta, hints_dir])
+    target.setFollowOnTargetFn(build_hints, args=[filtered_bam_tree, genome, db, genome_fasta, hints_dir])
 
 
 def sort_by_name(target, bam_path, references, out_filter, paired):
@@ -88,7 +88,7 @@ def sort_by_name(target, bam_path, references, out_filter, paired):
     system("samtools index {}".format(out_filter))
 
 
-def build_hints(target, filtered_bam_tree, genome, db_path, genome_fasta, hints_dir):
+def build_hints(target, filtered_bam_tree, genome, db, genome_fasta, hints_dir):
     """
     Driver function for hint building. Builts intron and exon hints, then calls cat_hints to do final concatenation
     and sorting.
@@ -101,7 +101,7 @@ def build_hints(target, filtered_bam_tree, genome, db_path, genome_fasta, hints_
         target.addChildTargetFn(build_intron_hints, memory=8 * 1024 ** 3, cpu=2, args=[bam_file, intron_hints_path])
         exon_hints_path = exon_hints_tree.getTempFile(suffix=".exon.gff")
         target.addChildTargetFn(build_exon_hints, memory=8 * 1024 ** 3, cpu=2, args=[bam_file, exon_hints_path])
-    target.setFollowOnTargetFn(cat_hints, args=[intron_hints_tree, exon_hints_tree, genome, db_path, genome_fasta,
+    target.setFollowOnTargetFn(cat_hints, args=[intron_hints_tree, exon_hints_tree, genome, db, genome_fasta,
                                                 hints_dir])
 
 
@@ -124,7 +124,7 @@ def build_intron_hints(target, bam_file, intron_hints_path):
     system(cmd)
 
 
-def cat_hints(target, intron_hints_tree, exon_hints_tree, genome, db_path, genome_fasta, hints_dir):
+def cat_hints(target, intron_hints_tree, exon_hints_tree, genome, db, genome_fasta, hints_dir):
     """
     All intron and exon hint gff files are concatenated and then sorted.
     """
@@ -142,17 +142,17 @@ def cat_hints(target, intron_hints_tree, exon_hints_tree, genome, db_path, genom
     cmd = "cat {} | sort -n -k4,4 | sort -s -n -k5,5 | sort -s -n -k3,3 | sort -s -k1,1 | join_mult_hints.pl > {}"
     cmd = cmd.format(concat_hints, hints)
     system(cmd)
-    target.setFollowOnTargetFn(load_db, args=[hints, db_path, genome, genome_fasta])
+    target.setFollowOnTargetFn(load_db, args=[hints, db, genome, genome_fasta])
 
 
-def load_db(target, hints, db_path, genome, genome_fasta, timeout=30000, intervals=120):
+def load_db(target, hints, db, genome, genome_fasta, timeout=30000, intervals=120):
     """
     Final database loading.
     NOTE: Once done on all genomes, you want to run load2sqlitedb --makeIdx --dbaccess ${db}
     """
     cmd = "load2sqlitedb --noIdx --species={} --dbaccess={} {}"
-    fa_cmd = cmd.format(genome, db_path, genome_fasta)
-    hints_cmd = cmd.format(genome, db_path, hints)
+    fa_cmd = cmd.format(genome, db, genome_fasta)
+    hints_cmd = cmd.format(genome, db, hints)
     def handle_concurrency(cmd, timeout, intervals, start_time=None):
         if start_time is None:
             start_time = time.time()
@@ -167,7 +167,7 @@ def load_db(target, hints, db_path, genome, genome_fasta, timeout=30000, interva
             handle_concurrency(cmd, timeout, intervals, start_time)
         else:
             raise RuntimeError(ret)
-    mkdir_p(os.path.dirname(db_path))
+    mkdir_p(os.path.dirname(db))
     for cmd in [fa_cmd, hints_cmd]:
         ret = handle_concurrency(cmd, timeout, intervals)
 

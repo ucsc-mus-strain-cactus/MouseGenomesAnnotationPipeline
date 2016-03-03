@@ -26,17 +26,20 @@ class BuildHints(luigi.WrapperTask):
         args = HashableNamespace()
         args.__dict__.update(vars(self.params.jobTreeOptions))
         args.genome = genome
+        args.jobTree = os.path.join(self.params.workDir, 'jobTrees', genome)
         args.fasta = self.params.fasta_map[genome]
         args.database = self.params.database
-        args.hintsDir = self.params.hintsDir
         args.bams = self.params.bam_map[genome]
         args.norestart = self.params.norestart
+        args.hintsDir = os.path.join(self.params.workDir, 'reduced_hints')
+        args.hintsFile = os.path.join(args.hintsDir, genome + '.reduced_hints.gff')
         return args
 
     def requires(self):
         arg_holder = []
         for genome in self.params.genomes:
             args = self.create_args(genome)
+            ensureDir(os.path.dirname(args.jobTree))
             arg_holder.append(args)
             yield GenerateHints(args)
         yield FinishDb(self.params, arg_holder)
@@ -44,6 +47,8 @@ class BuildHints(luigi.WrapperTask):
 
 class GenerateHints(AbstractJobTreeTask):
     def output(self):
+        # TODO; this doesn't check if db gets loaded too
+        #return luigi.LocalTarget(self.cfg.hintsFile)
         return
 
     def run(self):
@@ -76,10 +81,9 @@ def parse_args():
     parser.add_argument('--genomeFastas', action=NamespaceAction, nargs='+', mode='dict',
                         required=True, metavar='KEY=VALUE',
                         help='for each key:value pair, give a genome and a fasta.')
-    parser.add_argument_with_mkdir_p("--database", required=True, metavar='DIR',
-                                     help='path to write database to.')
-    parser.add_argument("--hintsDir", metavar='PATH', default=None,
-                        help='path to write hints gffs to. (optional)')
+    parser.add_argument("--database", required=True, metavar='FILE', help='path to write database to.')
+    parser.add_argument_with_mkdir_p('--workDir', default='hints_work', metavar='DIR',
+                                     help='Work directory. Will contain intermediate files that may be useful.')
     parser.add_argument('--norestart', action='store_true', default=False,
                         help='Set to force jobtree pipeline components to start from the beginning instead of '
                              'attempting a restart.')
@@ -95,13 +99,15 @@ def parse_args():
     Stack.addJobTreeOptions(jobtree_parser)
     args = parser.parse_args(namespace=HashableNamespace())
     args.jobTreeOptions = jobtree_parser.parse_known_args(namespace=HashableNamespace())[0]
-    # munge parsed args, verify
+    args.jobTreeOptions.jobTree = None
+    args.jobTreeOptions.__dict__.update({x: y for x, y in vars(args).iteritems() if x in args.jobTreeOptions})
+    # munge parsed args, verify, make hashable
     args.genomes = frozenset([vars(namespace).keys()[0] for namespace in args.genomeFastas])
     fasta_map = {}
     for namespace in args.genomeFastas:
         genome = vars(namespace).keys()[0]
-        fastas = vars(namespace).values()
-        fasta_map[genome] = tuple(fastas)
+        fasta_map[genome] = vars(namespace).values()[0]
+        assert os.path.exists(fasta_map[genome])
     args.fasta_map = frozendict(fasta_map)
     bam_map = {}
     for namespace in args.bamFiles:
