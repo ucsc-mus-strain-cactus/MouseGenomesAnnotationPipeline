@@ -359,8 +359,10 @@ class GeneSetPlots(luigi.Task):
     mode = luigi.Parameter()
 
     def requires(self):
-        r = [GeneSet(cfg=x) for x in self.cfg.query_target_cfgs.itervalues()]
-        assert len(r) > 0, self.cfg.query_target_cfgs
+        if self.mode == 'transMap':
+            r = [GeneSet(cfg=x) for x in self.cfg.query_target_cfgs.itervalues()]
+        else:
+            r = [GeneSet(cfg=x) for x in self.cfg.augustus_cfgs.itervalues()]
         return r
 
     def output(self):

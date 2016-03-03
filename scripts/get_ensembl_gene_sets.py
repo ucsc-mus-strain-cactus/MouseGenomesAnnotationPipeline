@@ -44,8 +44,8 @@ def build_attributes(database, name, out_dir):
     transcripts_cmd = ['hgsql', '-Ne', 'select transcript, gene from ensGtp', database]
     transcripts = dict(x.split() for x in callProcLines(transcripts_cmd))
     r = []
-    for transcript_id, gene_name in transcripts.iteritems():
-        gene_id = genes[transcript_id]
+    for transcript_id, gene_id in transcripts.iteritems():
+        gene_name = genes.get(transcript_id, 'NoName')
         biotype = source[transcript_id]
         r.append([gene_id, gene_name, biotype, transcript_id, biotype])
     with open(os.path.join(out_dir, name + '.tsv'), 'w') as outf:

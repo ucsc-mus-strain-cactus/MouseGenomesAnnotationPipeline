@@ -94,6 +94,8 @@ def parse_args():
     args.genomes = genomes
     if args.targetGenomes is None:
         args.targetGenomes = genomes
+    else:
+        args.targetGenomes = tuple(args.targetGenomes)
     args.tree = newick_str
     # make hashable
     args.geneSets = tuple(args.geneSets)

@@ -17,7 +17,7 @@ class PipelineConfiguration(HashableNamespace):
         self.work_dir = os.path.join(args.workDir, gene_set.sourceGenome, gene_set.geneSet)
         self.metrics_dir = os.path.join(self.work_dir, 'transMap_gene_set_metrics')
         self.output_dir = os.path.join(args.outputDir, gene_set.sourceGenome, gene_set.geneSet)
-        self.jobtree_dir = args.jobTreeDir
+        self.jobtree_dir = os.path.join(args.jobTreeDir, gene_set.sourceGenome, gene_set.geneSet)
         self.db = os.path.join(self.work_dir, 'comparativeAnnotator', 'classification.db')
         self.target_genomes = frozenset(set(args.targetGenomes) - set([gene_set.sourceGenome]))
         self.ordered_target_genomes = tuple([x for x in gene_set.orderedTargetGenomes if x in self.target_genomes])
@@ -143,7 +143,7 @@ class AugustusCfg(HashableNamespace):
     """
     Holds all file definitions for every comnbination of gene_set + genome
     """
-    def __init__(self, cfg, query_cfg, target_genome, mode, metrics_dir):
+    def __init__(self, cfg, target_genome, mode, metrics_dir):
         self.query_target_cfg = cfg
         self.query_cfg = cfg.query_cfg
         self.query_genome = cfg.query_genome
