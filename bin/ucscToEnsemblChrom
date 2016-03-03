@@ -1,0 +1,26 @@
+#!/usr/bin/gawk -f
+# ucscToEnsemblChrom -v chromCol=2 tabIn >tabPut
+# awk program to convert chrom names from UCSC to Ensembl format.
+#  Assumse all alts are version 1
+# chr1_GL456211_random, chrUn_GL456239
+#
+#
+
+BEGIN {
+    FS = OFS = "\t"
+    if (chromCol == "") {
+        print "Error: must specify -v chromCol=n" > "/dev/stderr"
+        exit(1)
+    }
+}
+
+$chromCol=="chrM" {
+    $chromCol = "MT";
+}
+{
+    $chromCol = gensub("_random$","", "g", $chromCol);
+    $chromCol = gensub("^chr.*_([0-9A-Za-z]+)$","\\1.1", "g", $chromCol);
+    gsub("^chr","",$chromCol);
+    print $0;
+}
+

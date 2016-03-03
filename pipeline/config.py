@@ -123,13 +123,12 @@ class QueryTargetCfg(HashableNamespace):
         self.tm_work_dir = os.path.join(cfg.work_dir, 'transMap')
         self.psl = os.path.join(self.tm_work_dir, target_genome + '.psl')
         self.gp = os.path.join(self.tm_work_dir, target_genome + '.gp')
-        self.cds = os.path.join(self.tm_work_dir, target_genome + '.cds')
         self.bed = os.path.join(self.tm_work_dir, target_genome + '.bed')
         # comparativeAnnotator
         comp_ann_jobtree = os.path.join(self.jobtree_dir, 'comparativeAnnotator', self.target_genome)
         self.comp_ann = CompAnnJobTree(self, comp_ann_jobtree, mode=self.mode)
         # final gene set
-        self.gene_set_dir = os.path.join(self.output_dir, 'transMap_gene_set')
+        self.gene_set_dir = os.path.join(self.output_dir, 'transMap_gene_set', target_genome)
         self.geneset_gps = frozendict((x, os.path.join(self.gene_set_dir, x + '.gp')) for x in self.biotypes)
         self.geneset_gtfs = frozendict((x, os.path.join(self.gene_set_dir, x + '.gtf')) for x in self.biotypes)
         self.pickled_metrics = os.path.join(self.metrics_dir, '{}.pickle'.format(target_genome))
@@ -309,7 +308,7 @@ class TransMapPlotCfg(HashableNamespace):
         self.query_target_cfgs = query_target_cfgs
         self.gene_set = cfg.gene_set
         self.query_genome = self.gene_set.sourceGenome
-        self.target_genomes = cfg.ordered_target_genomes
+        self.ordered_target_genomes = cfg.ordered_target_genomes
         self.biotype = biotype
         self.output_dir = os.path.join(cfg.output_dir, 'transMap_plots', biotype)
         self.para_plot = os.path.join(self.output_dir, biotype + '_alignment_paralogy.pdf')
@@ -348,9 +347,9 @@ class GeneSetPlotCfg(HashableNamespace):
         self.metrics_dir = metrics_dir
         self.biotypes = cfg.biotypes
         if mode == 'transMap':
-            self.target_genomes = cfg.ordered_target_genomes
+            self.ordered_target_genomes = cfg.ordered_target_genomes
         elif mode == 'AugustusTM' or mode == 'AugustusTMR':
-            self.target_genomes = cfg.ordered_augustus_genomes
+            self.ordered_target_genomes = cfg.ordered_augustus_genomes
         else:
             raise NotImplementedError("mode = {}".format(mode))
         self.gene_biotype_plot = os.path.join(self.gene_set_plot_dir, 'gene_biotype_stacked_plot.pdf')

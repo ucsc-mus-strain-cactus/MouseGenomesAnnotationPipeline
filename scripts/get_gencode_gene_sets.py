@@ -17,10 +17,11 @@ def parse_args():
     parser.add_argument('--name', help='Name to use instead of database name', default=None)
     parser.add_argument('--outDir', help='location to place files. (default: %(default)s)', default='./genesets')
     parser.add_argument('--includeChroms', nargs='+', default=None, help='Limit to just these chromosomes.')
+    parser.add_argument('--convertUCSCtoEnsembl', action='store_true', help='Convert UCSC chromosome names to ensembl.')
     return parser.parse_args()
 
 
-def get_genes(database, gencode_version, gencode_set, name, out_dir, include_chroms):
+def get_genes(database, gencode_version, gencode_set, name, out_dir, include_chroms, convert_ucsc):
     if include_chroms is None:
         cmd = ['hgsql', '-Ne', 'select * from wgEncodeGencode{}{}'.format(gencode_set, gencode_version), database]
     else:
@@ -30,6 +31,8 @@ def get_genes(database, gencode_version, gencode_set, name, out_dir, include_chr
         l += 'chrom = "{}"'.format(include_chroms[-1])
         cmd = ['hgsql', '-Ne', l, database]
     cmd = [cmd, ['cut', '-f', '2-']]  # strip bin name
+    if convert_ucsc is True:
+        cmd += ['bin/ucscToEnsemblChrom', '-v', 'chromCol=2', '/dev/stdin']
     with open(os.path.join(out_dir, name + '.gp'), 'w') as outf:
         runProc(cmd, stdout=outf)
 
@@ -40,8 +43,9 @@ def build_attributes(database, gencode_version, name, out_dir):
            'select geneId,geneName,geneType,transcriptId,transcriptType from '
            'wgEncodeGencodeAttrs{}'.format(gencode_version),
            database]
-    with open(os.path.join(out_dir, name + '.tsv'), 'w') as outf:
+    with open(os.path.join(out_dir, name + '.tsv'), 'w', buffering=-1) as outf:
         outf.write(header)
+        outf.flush()
         runProc(cmd, stdout=outf)
 
 
@@ -50,7 +54,8 @@ def main():
     if args.name is None:
         args.name = args.database
     ensureDir(args.outDir)
-    get_genes(args.database, args.gencodeVersion, args.gencodeSet, args.name, args.outDir, args.includeChroms)
+    get_genes(args.database, args.gencodeVersion, args.gencodeSet, args.name, args.outDir, args.includeChroms,
+              args.convertUCSCtoEnsembl)
     build_attributes(args.database, args.gencodeVersion, args.name, args.outDir)
 
 

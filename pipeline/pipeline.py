@@ -173,7 +173,7 @@ class ChainFiles(AbstractJobTreeTask):
 
     def requires(self):
         return (GenomeTwoBit(cfg=self.cfg, target_file=self.cfg.genome_two_bit),
-                GenomeTwoBit(cfg=self.cfg.query_cfg, target_file=self.cfg.genome_two_bit))
+                GenomeTwoBit(cfg=self.cfg.query_cfg, target_file=self.cfg.query_cfg.genome_two_bit))
 
     def run(self):
         ensureDir(self.cfg.chaining.out_dir)
@@ -206,7 +206,7 @@ class TransMapPsl(AbstractAtomicFileTask):
         return ChainFiles(self.cfg), AnnotationFiles(self.cfg.query_cfg)
 
     def run(self):
-        psl_cmd = ['pslMap', '-chainMapFile', self.cfg.psl,
+        psl_cmd = ['pslMap', '-chainMapFile', self.cfg.ref_psl,
                    self.cfg.chaining.chainFile, '/dev/stdout']
         post_chain_cmd = ['bin/postTransMapChain', '/dev/stdin', '/dev/stdout']
         sort_cmd = ['sort', '-k', '14,14', '-k', '16,16n']
@@ -226,7 +226,7 @@ class TransMapGp(AbstractAtomicFileTask):
 
     def run(self):
         cmd = ['mrnaToGene', '-keepInvalid', '-quiet', '-genePredExt', '-ignoreUniqSuffix', '-insertMergeSize=0',
-               '-cdsFile={}'.format(self.cfg.cds), self.cfg.psl, '/dev/stdout']
+               '-cdsFile={}'.format(self.cfg.ref_cds), self.cfg.psl, '/dev/stdout']
         self.run_cmd(cmd)
 
 
@@ -340,13 +340,13 @@ class TransMapAnalysis(luigi.Task):
     def run(self):
         for biotype, tm_cfg in self.cfg.tm_plots.iteritems():
             ensureDir(tm_cfg.output_dir)
-            paralogy_plot(tm_cfg.target_genomes, tm_cfg.query_genome, biotype, tm_cfg.para_plot,
+            paralogy_plot(tm_cfg.ordered_target_genomes, tm_cfg.query_genome, biotype, tm_cfg.para_plot,
                           self.cfg.db)
-            cov_plot(tm_cfg.target_genomes, tm_cfg.query_genome, biotype, tm_cfg.cov_plot, self.cfg.db)
-            ident_plot(tm_cfg.target_genomes, tm_cfg.query_genome, biotype, tm_cfg.ident_plot, self.cfg.db)
-            num_pass_excel(tm_cfg.target_genomes, tm_cfg.query_genome, biotype, tm_cfg.num_pass_excel,
+            cov_plot(tm_cfg.ordered_target_genomes, tm_cfg.query_genome, biotype, tm_cfg.cov_plot, self.cfg.db)
+            ident_plot(tm_cfg.ordered_target_genomes, tm_cfg.query_genome, biotype, tm_cfg.ident_plot, self.cfg.db)
+            num_pass_excel(tm_cfg.ordered_target_genomes, tm_cfg.query_genome, biotype, tm_cfg.num_pass_excel,
                            self.cfg.db, self.cfg.args.filterChroms)
-            num_pass_excel_gene_level(tm_cfg.target_genomes, tm_cfg.query_genome, biotype,
+            num_pass_excel_gene_level(tm_cfg.ordered_target_genomes, tm_cfg.query_genome, biotype,
                                       tm_cfg.num_pass_excel_gene, self.cfg.db, self.cfg.args.filterChroms)
 
 
