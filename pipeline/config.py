@@ -144,6 +144,7 @@ class AugustusCfg(HashableNamespace):
     Holds all file definitions for every comnbination of gene_set + genome
     """
     def __init__(self, cfg, target_genome, mode, metrics_dir):
+        self.__dict__.update(vars(cfg))  # bring in all configurations from query-target
         self.query_target_cfg = cfg
         self.query_cfg = cfg.query_cfg
         self.query_genome = cfg.query_genome
@@ -154,7 +155,6 @@ class AugustusCfg(HashableNamespace):
         self.fasta = cfg.genome_fasta
         self.chrom_sizes = cfg.chrom_sizes
         self.transcript_fasta = cfg.transcript_fasta
-        self.__dict__.update(vars(cfg))  # bring in all configurations from query-target
         # files that will be produced
         self.augustus_gtf = os.path.join(cfg.work_dir, mode, target_genome + '.gtf')
         self.augustus_gp = os.path.join(cfg.work_dir, mode, target_genome + '.gp')
@@ -248,7 +248,7 @@ class TMRJobTree(HashableNamespace):
     def __init__(self, cfg, jobtree_dir):
         args = cfg.args
         self.__dict__.update(vars(args.jobTreeOptions))
-        self.defaultMemory = 4 * 1024 ** 3
+        self.defaultMemory = 8 * 1024 ** 3
         self.jobTree = jobtree_dir
         tm_2_hints_script = 'submodules/comparativeAnnotator/augustus/transMap2hints.pl'  # TODO: don't hardcode
         assert os.path.exists(tm_2_hints_script)
@@ -263,7 +263,7 @@ class TMRJobTree(HashableNamespace):
         assert all([os.path.exists(x) for x in self.cfgs.itervalues()])
         self.augustus_bin = 'submodules/augustus/bin/augustus'
         assert os.path.exists(self.augustus_bin)
-        self.padding = 25000
+        self.padding = 20000
         self.max_gene_size = 2000000
         self.hints_db = args.augustusHints
         self.out_gtf = cfg.augustus_gtf
@@ -346,6 +346,7 @@ class GeneSetPlotCfg(HashableNamespace):
         self.query_tgt_cfgs = query_tgt_cfgs
         self.metrics_dir = metrics_dir
         self.biotypes = cfg.biotypes
+        self.gene_set = cfg.gene_set
         if mode == 'transMap':
             self.ordered_target_genomes = cfg.ordered_target_genomes
         elif mode == 'AugustusTM' or mode == 'AugustusTMR':

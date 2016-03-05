@@ -1,3 +1,3 @@
-1. Still have non-hashable configs when running Augustus.
 2. Plot generation is SLOW - need to split into individual jobs.
 3. Genome files are unnecessarily duplicated in multiple gene set cases. Need to find the sum of target genomes and produce files just for them.
+4. AugustusComparativeAnnotator is trying to run before AugustusTMR has been ran - why?

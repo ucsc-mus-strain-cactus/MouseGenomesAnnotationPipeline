@@ -286,9 +286,13 @@ class GeneSet(luigi.Task):
     TODO: this should be split up into individual tasks, which have a guarantee of atomicity.
     """
     cfg = luigi.Parameter()
+    mode = luigi.Parameter()
 
     def requires(self):
-        return ComparativeAnnotator(cfg=self.cfg)
+        if self.mode == 'transMap':
+            return ComparativeAnnotator(cfg=self.cfg)
+        else:
+            return AugustusComparativeAnnotator(cfg=self.cfg)
 
     def output(self):
         r = [luigi.LocalTarget(x) for x in itertools.chain(self.cfg.geneset_gps.values(),
@@ -360,13 +364,16 @@ class GeneSetPlots(luigi.Task):
 
     def requires(self):
         if self.mode == 'transMap':
-            r = [GeneSet(cfg=x) for x in self.cfg.query_target_cfgs.itervalues()]
+            r = [GeneSet(cfg=x, mode=self.mode) for x in self.cfg.query_target_cfgs.itervalues()]
         else:
-            r = [GeneSet(cfg=x) for x in self.cfg.augustus_cfgs.itervalues()]
+            r = [GeneSet(cfg=x, mode=self.mode) for x in self.cfg.augustus_cfgs.itervalues()]
         return r
 
     def output(self):
-        return [luigi.LocalTarget(x) for x in self.cfg.gene_set_plots.plots]
+        if self.mode == 'transMap':
+            return [luigi.LocalTarget(x) for x in self.cfg.gene_set_plots.plots]
+        else:
+            return [luigi.LocalTarget(x) for x in self.cfg.augustus_gene_set_plots.plots]
 
     def run(self):
         if self.mode == 'augustus':
