@@ -11,7 +11,7 @@ from abstract_classes import RowsSqlTarget
 from comparativeAnnotator.annotation_pipeline import main as comp_ann_main
 from comparativeAnnotator.plotting.transmap_analysis import paralogy_plot, cov_plot, ident_plot, num_pass_excel,\
     num_pass_excel_gene_level
-from comparativeAnnotator.generate_gene_set import generate_consensus
+from comparativeAnnotator.generate_gene_set import generate_gene_set_wrapper
 from comparativeAnnotator.plotting.gene_set_plots import gene_set_plots
 from comparativeAnnotator.augustus.run_augustus import augustus_tmr
 from comparativeAnnotator.augustus.find_intron_vector import find_intron_vector
@@ -286,9 +286,13 @@ class GeneSet(luigi.Task):
     TODO: this should be split up into individual tasks, which have a guarantee of atomicity.
     """
     cfg = luigi.Parameter()
+    mode = luigi.Parameter()
 
     def requires(self):
-        return ComparativeAnnotator(cfg=self.cfg)
+        if self.mode == 'transMap':
+            return ComparativeAnnotator(cfg=self.cfg)
+        else:
+            return AugustusComparativeAnnotator(cfg=self.cfg)
 
     def output(self):
         r = [luigi.LocalTarget(x) for x in itertools.chain(self.cfg.geneset_gps.values(),
@@ -306,7 +310,7 @@ class GeneSet(luigi.Task):
     def run(self):
         ensureDir(self.cfg.gene_set_dir)
         ensureDir(self.cfg.metrics_dir)
-        generate_consensus(self.cfg)
+        generate_gene_set_wrapper(self.cfg)
         self.convert_gp_to_gtf(self.cfg.geneset_gps, self.cfg.geneset_gtfs)
 
 
@@ -352,7 +356,7 @@ class TransMapAnalysis(luigi.Task):
 
 class GeneSetPlots(luigi.Task):
     """
-    Analysis plots on how well transMap gene set finding did. Produced based on comparativeAnnotator output.
+    Analysis plots on how well gene set finding did. Produced based on comparativeAnnotator output.
     TODO: make this a individual luigi task for each plot
     """
     cfg = luigi.Parameter()
@@ -360,13 +364,16 @@ class GeneSetPlots(luigi.Task):
 
     def requires(self):
         if self.mode == 'transMap':
-            r = [GeneSet(cfg=x) for x in self.cfg.query_target_cfgs.itervalues()]
+            r = [GeneSet(cfg=x, mode=self.mode) for x in self.cfg.query_target_cfgs.itervalues()]
         else:
-            r = [GeneSet(cfg=x) for x in self.cfg.augustus_cfgs.itervalues()]
+            r = [GeneSet(cfg=x, mode=self.mode) for x in self.cfg.augustus_cfgs.itervalues()]
         return r
 
     def output(self):
-        return [luigi.LocalTarget(x) for x in self.cfg.gene_set_plots.plots]
+        if self.mode == 'transMap':
+            return [luigi.LocalTarget(x) for x in self.cfg.gene_set_plots.plots]
+        else:
+            return [luigi.LocalTarget(x) for x in self.cfg.augustus_gene_set_plots.plots]
 
     def run(self):
         if self.mode == 'augustus':

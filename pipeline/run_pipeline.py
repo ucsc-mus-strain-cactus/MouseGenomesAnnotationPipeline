@@ -27,6 +27,7 @@ class RunPipeline(luigi.WrapperTask):
         for gene_set in self.params.geneSets:
             # in cases where the user does not specifies a subset of target genomes, remove source
             cfg = PipelineConfiguration(self.params, gene_set)
+            assert hash(cfg)
             yield AnnotationFiles(cfg.query_cfg)
             yield ReferenceComparativeAnnotator(cfg.query_cfg)
             for target_genome, query_target_cfg in cfg.query_target_cfgs.iteritems():
@@ -34,10 +35,10 @@ class RunPipeline(luigi.WrapperTask):
                 yield ChainFiles(query_target_cfg)
                 yield TransMap(query_target_cfg)
                 yield ComparativeAnnotator(query_target_cfg)
-                yield GeneSet(query_target_cfg)
-                if self.params.augustus is True:
+                yield GeneSet(query_target_cfg, mode='transMap')
+                if self.params.augustus is True and target_genome in args.augustusGenomes:
                     yield RunAugustus(cfg.augustus_cfgs[target_genome])
-                    yield GeneSet(cfg.augustus_cfgs[target_genome])
+                    yield GeneSet(cfg.augustus_cfgs[target_genome], mode='augustus')
             yield TransMapAnalysis(cfg)
             yield GeneSetPlots(cfg, mode='transMap')
             if self.params.augustus is True:
@@ -52,7 +53,8 @@ def parse_args():
     parser.add_argument('--geneSets', action=NamespaceAction, nargs=4, required=True, metavar='KEY=VALUE',
                         help='Input gene sets. Expects groups of four key-value pairs in the format --geneSets '
                              'geneSet=Ensembl sourceGenome=C_elegans genePred=testdata/c_elegans.transcripts.gp '
-                             'attributesTsv=testdata/ce11.ensembl.attributes.tsv')
+                             'attributesTsv=testdata/ce11.ensembl.attributes.tsv. '
+                             'At this point geneSet should only equal Ensembl or Gencode.')
     parser.add_argument('--targetGenomes', default=None, nargs='+', metavar='NAMES',
                         help='Space-separated list of genomes you wish to annotate. '
                              'If not set, all non-reference genomes will be annotated.')
@@ -107,13 +109,19 @@ def parse_args():
     args.jobTreeOptions.__dict__.update({x: y for x, y in vars(args).iteritems() if x in args.jobTreeOptions})
     # make the default jobTree dir None so that it crashes if I am stupid
     args.jobTreeOptions.jobTree = None
-    # manually check that all geneSet files exist because my fancy FileArgumentParser can't do this
+    # Validate arguments - manually check that all geneSet files exist because my fancy FileArgumentParser can't do this
     for geneSet in args.geneSets:
         assert all([x in geneSet for x in ['geneSet', 'sourceGenome', 'genePred', 'attributesTsv']])
+        try:
+            assert any([geneSet.geneSet.lower().find(x) != -1 for x in ['ensembl', 'gencode']])
+        except AssertionError:
+            raise RuntimeError("Gene set must be gencode or ensembl at this point.")
         assert os.path.exists(geneSet.genePred), 'Error: genePred file {} missing.'.format(geneSet.genePred)
         assert os.path.exists(geneSet.attributesTsv), 'Error: attributes file {} missing.'.format(geneSet.attributesTsv)
     if args.augustusGenomes is None:
         args.augustusGenomes = args.targetGenomes
+    else:
+        args.augustusGenomes = tuple(args.augustusGenomes)
     return args
 
 
