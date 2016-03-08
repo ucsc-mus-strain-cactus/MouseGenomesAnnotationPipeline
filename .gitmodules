@@ -13,3 +13,6 @@
 [submodule "submodules/comparativeAnnotator"]
 	path = submodules/comparativeAnnotator
 	url = https://github.com/ucsc-mus-strain-cactus/comparativeAnnotator.git
+[submodule "submodules/hal"]
+	path = submodules/hal
+	url = https://github.com/glennhickey/hal.git

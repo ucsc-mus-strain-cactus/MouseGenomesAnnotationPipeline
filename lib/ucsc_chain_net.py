@@ -53,14 +53,9 @@ def chainChromTarget(target, hal, queryGenome, queryChromSize, queryTwoBit, quer
     "target to chain one chromosome"
     queryBed = makeChromBedTmp(target, hal, queryChrom, queryChromSize)
     #  --inMemory caused out of memory in with some alignments with 31G allocated
-    try:
-        procOps.callProc([["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
-                          ["pslPosTarget", "/dev/stdin", "/dev/stdout"],
-                          ["axtChain", "-psl", "-verbose=0", "-linearGap=medium", "/dev/stdin", targetTwoBit, queryTwoBit, chainFile]])
-    except:
-        assert False, [["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
-                          ["pslPosTarget", "/dev/stdin", "/dev/stdout"],
-                          ["axtChain", "-psl", "-verbose=0", "-linearGap=medium", "/dev/stdin", targetTwoBit, queryTwoBit, chainFile]]
+    procOps.callProc([["halLiftover", "--outPSL", hal, queryGenome, queryBed, targetGenome, "/dev/stdout"],
+                      ["pslPosTarget", "/dev/stdin", "/dev/stdout"],
+                      ["axtChain", "-psl", "-verbose=0", "-linearGap=medium", "/dev/stdin", targetTwoBit, queryTwoBit, chainFile]])
 
 def chainChromMakeChildren(target, hal, queryGenome, queryTwoBit, targetGenome, targetTwoBit):
     "create child jobs to do per-chrom chaining"

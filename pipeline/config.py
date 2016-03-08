@@ -335,7 +335,8 @@ class GeneSetPlotCfg(HashableNamespace):
             self.tx_plot = os.path.join(self.out_dir, biotype, biotype + '_transcript_plot.pdf')
             self.gene_plot = os.path.join(self.out_dir, biotype, biotype + '_gene_plot.pdf')
             self.dup_rate_plot = os.path.join(self.out_dir, biotype, biotype + '_dup_rate_plot.pdf')
-            self.plots = tuple([self.tx_plot, self.gene_plot, self.dup_rate_plot])
+            self.longest_rate_plot = os.path.join(self.out_dir, biotype, biotype + '_longest_rescue_rate.pdf')
+            self.plots = tuple([self.tx_plot, self.gene_plot, self.dup_rate_plot, self.longest_rate_plot])
 
     def __init__(self, cfg, query_tgt_cfgs, metrics_dir, mode):
         self.mode = mode
