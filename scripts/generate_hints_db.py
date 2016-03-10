@@ -8,12 +8,13 @@ import luigi
 from frozendict import frozendict
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
-from pycbio.sys.fileOps import ensureDir
+from pycbio.sys.fileOps import ensureFileDir
 from pycbio.sys.procOps import runProc
 from jobTree.scriptTree.stack import Stack
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from comparativeAnnotator.augustus.build_hints_db import external_main
-from pipeline.abstract_classes import AbstractJobTreeTask
+from pipeline.abstract_classes import AbstractJobTreeTask, RowExistsSqlTarget
+from pycbio.sys.sqliteOps import ExclusiveSqlConnection, execute_query
 
 
 class BuildHints(luigi.WrapperTask):
@@ -26,7 +27,7 @@ class BuildHints(luigi.WrapperTask):
         args = HashableNamespace()
         args.__dict__.update(vars(self.params.jobTreeOptions))
         args.genome = genome
-        args.jobTree = os.path.join(self.params.workDir, 'jobTrees', genome)
+        args.jobTree = os.path.join(self.params.workDir, 'jobTrees', 'hintsDb', genome)
         args.fasta = self.params.fasta_map[genome]
         args.database = self.params.database
         args.bams = self.params.bam_map[genome]
@@ -39,7 +40,6 @@ class BuildHints(luigi.WrapperTask):
         arg_holder = []
         for genome in self.params.genomes:
             args = self.create_args(genome)
-            ensureDir(os.path.dirname(args.jobTree))
             arg_holder.append(args)
             yield GenerateHints(args)
         yield FinishDb(self.params, arg_holder)
@@ -47,12 +47,17 @@ class BuildHints(luigi.WrapperTask):
 
 class GenerateHints(AbstractJobTreeTask):
     def output(self):
-        # TODO; this doesn't check if db gets loaded too
-        #return luigi.LocalTarget(self.cfg.hintsFile)
-        return
+        row_query = 'SELECT genome FROM completionFlags WHERE genome = "{}"'.format(self.cfg.genome)
+        return RowExistsSqlTarget(self.cfg.database, 'completionFlags', row_query)
 
     def run(self):
         self.start_jobtree(self.cfg, external_main, self.cfg.norestart)
+        with ExclusiveSqlConnection(self.out_db) as con:
+            cur = con.cursor()
+            cmd = 'CREATE TABLE IF NOT EXISTS completionFlags (genome TEXT)'
+            execute_query(cur, cmd)
+            cmd = 'INSERT INTO completionFlags (genome) VALUES ("{}")'.format(self.cfg.genome)
+            execute_query(cur, cmd)
 
 
 class FinishDb(luigi.Task):
@@ -63,7 +68,12 @@ class FinishDb(luigi.Task):
         return [GenerateHints(x) for x in self.arg_holder]
 
     def output(self):
-        return
+        con, cur = open_database(self.cfg.database)
+        r = []
+        for idx in ['gidx', 'hidx']:
+            cmd = 'PRAGMA index_info("{}")'.format(idx)
+            r.append(execute_query(cur, cmd).fetchall())
+        return len(r) == 2
 
     def run(self):
         cmd = ['load2sqlitedb', '--makeIdx', '--dbaccess', self.args.database]
@@ -118,9 +128,7 @@ def parse_args():
     args.bam_map = frozendict(bam_map)
     del args.bamFiles
     del args.genomeFastas
-    p = os.path.dirname(args.database)
-    if p != '':
-        ensureDir(p)
+    ensureFileDir(args.database)
     return args
 
 

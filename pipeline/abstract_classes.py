@@ -13,7 +13,7 @@ import os
 from jobTree.src.jobTreeStatus import parseJobFiles
 from jobTree.src.master import getJobFileDirName
 from pycbio.sys.procOps import runProc
-from pycbio.sys.fileOps import ensureDir, rmTree, iterRows, atomicInstall
+from pycbio.sys.fileOps import ensureDir, ensureFileDir, rmTree, iterRows, atomicInstall
 from pycbio.sys.sqliteOps import open_database, execute_query
 
 ########################################################################################################################
@@ -112,7 +112,7 @@ class AbstractJobTreeTask(luigi.Task):
             rmTree(jobtree_path)
         except OSError:
             pass
-        ensureDir(os.path.dirname(jobtree_path))
+        ensureFileDir(jobtree_path)
 
     def start_jobtree(self, args, entry_fn, norestart=False):
         """
@@ -172,3 +172,47 @@ class RowsSqlTarget(luigi.Target):
         query = 'SELECT COUNT(*) FROM "{}"'.format(self.table)
         num_rows_in_table = execute_query(cur, query).fetchone()[0]
         return num_rows_in_table == num_rows_in_file
+
+
+class RowExistsSqlTarget(luigi.Target):
+    """
+    Checks to see if a specific row exists in a SQL table.
+    """
+    def __init__(self, db, table, row_query):
+        self.db = db
+        self.table = table
+        self.row_query = row_query
+
+    def exists(self):
+        """TODO: duplicates code from RowSqlTarget"""
+        # database may have not been created yet
+        if not os.path.exists(self.db):
+            return False
+        con, cur = open_database(self.db)
+        # check if table exists
+        query = 'SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'.format(self.table)
+        if len(execute_query(cur, query).fetchall()) != 1:
+            return False
+        return len(execute_query(cur, self.row_query).fetchall()) == 1
+
+
+class DatabaseSqlTarget(luigi.Target):
+    """
+    Checks that a given database has a given table. Used to create a database version of a completion flag,
+    whereby a accessory table is created at the completion of a step. A bit of a hack, but useful when it is
+    difficult to know exactly what a database will end up looking like.
+    """
+    def __init__(self, db, table):
+        self.db = db
+        self.table = table
+
+    def exists(self):
+        """TODO: duplicates code from RowSqlTarget"""
+        # database may have not been created yet
+        if not os.path.exists(self.db):
+            return False
+        con, cur = open_database(self.db)
+        query = 'SELECT name FROM sqlite_master WHERE type="table" AND name="{}"'.format(self.table)
+        if len(execute_query(cur, query).fetchall()) != 1:
+            return False
+        return True
