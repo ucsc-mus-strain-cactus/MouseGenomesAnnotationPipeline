@@ -54,7 +54,7 @@ class TranscriptFasta(AbstractAtomicFileTask):
     """
     def requires(self):
         return (TranscriptBed(cfg=self.cfg, target_file=self.cfg.bed),
-                GenomeFasta(cfg=self.cfg, target_file=self.cfg.ref_fasta))
+                GenomeFlatFasta(cfg=self.cfg, target_file=self.cfg.flat_fasta))
 
     def run(self):
         bed_target, genome_fasta = self.requires()
@@ -154,6 +154,9 @@ class GenomeFlatFasta(AbstractAtomicFileTask):
 
     def run(self):
         cmd = ['pyfasta', 'flatten', self.cfg.genome_fasta]
+        runProc(cmd)
+        # re-do index now
+        cmd = ['samtools', 'faidx', self.cfg.genome_fasta]
         runProc(cmd)
 
 
