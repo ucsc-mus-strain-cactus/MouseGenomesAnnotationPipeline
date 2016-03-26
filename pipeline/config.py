@@ -99,6 +99,7 @@ class QueryTargetCfg(HashableNamespace):
         self.ref_cds = cfg.query_cfg.cds
         self.annotation_gp = cfg.gene_set.genePred
         self.transcript_fasta = cfg.query_cfg.transcript_fasta
+        self.flat_transcript_fasta = self.transcript_fasta + '.flat'
         self.target_genome = target_genome
         self.query_genome = cfg.gene_set.sourceGenome
         self.attrs_tsv = cfg.gene_set.attributesTsv

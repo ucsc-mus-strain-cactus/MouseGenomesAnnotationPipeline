@@ -33,7 +33,7 @@ class AnnotationFiles(luigi.WrapperTask):
 
     def requires(self):
         yield TranscriptFasta(cfg=self.cfg, target_file=self.cfg.transcript_fasta)
-        yield FlatTranscriptFasta(cfg=self.cfg, target_file=self.cfg.flat_fasta)
+        yield FlatTranscriptFasta(cfg=self.cfg, target_file=self.cfg.flat_transcript_fasta)
         yield TranscriptBed(cfg=self.cfg, target_file=self.cfg.bed)
         yield FakePsl(cfg=self.cfg, target_files=(self.cfg.psl, self.cfg.cds))
         yield GenomeFiles(cfg=self.cfg)
@@ -57,10 +57,7 @@ class TranscriptFasta(AbstractAtomicFileTask):
                 GenomeFlatFasta(cfg=self.cfg, target_file=self.cfg.flat_fasta))
 
     def run(self):
-        bed_target, genome_fasta = self.requires()
-        bed_target_path = bed_target.output().path
-        genome_fasta_target_path = genome_fasta.output().path
-        cmd = ['bedtools', 'getfasta', '-fi', genome_fasta_target_path, '-bed', bed_target_path, '-fo', '/dev/stdout',
+        cmd = ['bedtools', 'getfasta', '-fi', self.cfg.ref_fasta, '-bed', self.cfg.bed, '-fo', '/dev/stdout',
                '-name', '-split', '-s']
         self.run_cmd(cmd)
 
@@ -124,14 +121,13 @@ class GenomeFasta(AbstractAtomicFileTask):
 class GenomeTwoBit(AbstractAtomicFileTask):
     """
     Produce a 2bit file from a fasta file. Requires kent tool faToTwoBit.
+    Needs to be done BEFORE we flatten.
     """
     def requires(self):
-
         return GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta)
 
     def run(self):
         import os
-        assert not os.path.exists(self.output().path), self.cfg
         cmd = ['faToTwoBit', self.cfg.genome_fasta, '/dev/stdout']
         self.run_cmd(cmd)
 
@@ -150,7 +146,8 @@ class GenomeFlatFasta(AbstractAtomicFileTask):
     Flattens a genome fasta in-place using pyfasta. Requires the pyfasta package.
     """
     def requires(self):
-        return GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta)
+        return (GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta),
+               GenomeTwoBit(cfg=self.cfg, target_file=self.cfg.genome_two_bit))
 
     def run(self):
         cmd = ['pyfasta', 'flatten', self.cfg.genome_fasta]
@@ -293,7 +290,7 @@ class GeneSet(luigi.Task):
 
     def requires(self):
         if self.mode == 'transMap':
-            return ComparativeAnnotator(cfg=self.cfg), ReferenceComparativeAnnotator(cfg=self.cfg)
+            return ComparativeAnnotator(cfg=self.cfg), ReferenceComparativeAnnotator(cfg=self.cfg.query_cfg)
         else:
             return AugustusComparativeAnnotator(cfg=self.cfg), AlignAugustus(cfg=self.cfg)
 
