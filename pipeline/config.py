@@ -289,6 +289,7 @@ class AlignAugustusJobTree(HashableNamespace):
         self.fasta = cfg.tmr_transcript_fasta
         self.ref_fasta = cfg.transcript_fasta
         self.db = cfg.db
+        self.augustus_gp = cfg.augustus_gp
 
     def __repr__(self):
         return self.__class__.__name__

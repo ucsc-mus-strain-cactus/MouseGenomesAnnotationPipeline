@@ -292,7 +292,9 @@ class GeneSet(luigi.Task):
         if self.mode == 'transMap':
             return ComparativeAnnotator(cfg=self.cfg), ReferenceComparativeAnnotator(cfg=self.cfg.query_cfg)
         else:
-            return AugustusComparativeAnnotator(cfg=self.cfg), AlignAugustus(cfg=self.cfg)
+            return (AugustusComparativeAnnotator(cfg=self.cfg), AlignAugustus(cfg=self.cfg),
+                    ComparativeAnnotator(cfg=self.cfg.query_target_cfg),
+                    ReferenceComparativeAnnotator(cfg=self.cfg.query_cfg))
 
     def output(self):
         r = [luigi.LocalTarget(x) for x in itertools.chain(self.cfg.geneset_gps.values(),
