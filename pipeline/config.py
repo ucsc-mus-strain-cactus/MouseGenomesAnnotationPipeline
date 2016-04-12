@@ -131,6 +131,7 @@ class QueryTargetCfg(HashableNamespace):
         # final gene set
         self.gene_set_dir = os.path.join(self.output_dir, 'transMap_gene_set', target_genome)
         self.geneset_gps = frozendict((x, os.path.join(self.gene_set_dir, x + '.gp')) for x in self.biotypes)
+        self.combined_gp = os.path.join(self.gene_set_dir, 'combined.gp')
         self.geneset_gtfs = frozendict((x, os.path.join(self.gene_set_dir, x + '.gtf')) for x in self.biotypes)
         self.pickled_metrics = os.path.join(self.metrics_dir, '{}.pickle'.format(target_genome))
         self.filter_chroms = self.args.filterChroms
@@ -174,6 +175,7 @@ class AugustusCfg(HashableNamespace):
         # consensus gene set
         self.gene_set_dir = os.path.join(self.output_dir, '{}_consensus_gene_set'.format(mode), target_genome)
         self.geneset_gps = frozendict((x, os.path.join(self.gene_set_dir, x + '.gp')) for x in self.biotypes)
+        self.combined_gp = os.path.join(self.gene_set_dir, 'combined.gp')
         self.geneset_gtfs = frozendict((x, os.path.join(self.gene_set_dir, x + '.gtf')) for x in self.biotypes)
         self.metrics_dir = metrics_dir
         self.pickled_metrics = os.path.join(self.metrics_dir, '{}.pickle'.format(target_genome))

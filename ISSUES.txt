@@ -1,4 +1,15 @@
 2. Plot generation is SLOW - need to split into individual jobs.
 3. Genome files are unnecessarily duplicated in multiple gene set cases. Need to find the sum of target genomes and produce files just for them.
-4. AugustusComparativeAnnotator is trying to run before AugustusTMR has been ran - why?
 5. Integrate AugustusCGP/AugustusCGP consensus finding.
+6. Sometimes getting database timeout errors, despite code to avoid so. See this traceback:
+
+    generate_gene_set_wrapper(self.cfg)
+  File "./submodules/comparativeAnnotator/generate_gene_set.py", line 465, in generate_gene_set_wrapper
+    gene_transcript_map = get_gene_transcript_map(args.query_genome, args.db, biotype)
+  File "./submodules/comparativeAnnotator/database_queries.py", line 356, in get_gene_transcript_map
+    for tx_id, gene_id in execute_query(r.tuples()):
+  File "./submodules/comparativeAnnotator/database_queries.py", line 217, in execute_query
+    raise OperationalError('Error. Original message: {}'.format(e))
+OperationalError: Error. Original message: database is locked
+
+7. Add a plot showing how often pseudogenes are resolved.

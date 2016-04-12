@@ -5,6 +5,7 @@ import sys
 import os
 import argparse
 import luigi
+import pysam
 from frozendict import frozendict
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
@@ -14,7 +15,7 @@ from jobTree.scriptTree.stack import Stack
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from comparativeAnnotator.augustus.build_hints_db import external_main
 from pipeline.abstract_classes import AbstractJobTreeTask, RowExistsSqlTarget
-from pycbio.sys.sqliteOps import ExclusiveSqlConnection, execute_query
+from pycbio.sys.sqliteOps import ExclusiveSqlConnection, execute_query, open_database
 
 
 class BuildHints(luigi.WrapperTask):
@@ -52,7 +53,7 @@ class GenerateHints(AbstractJobTreeTask):
 
     def run(self):
         self.start_jobtree(self.cfg, external_main, self.cfg.norestart)
-        with ExclusiveSqlConnection(self.out_db) as con:
+        with ExclusiveSqlConnection(self.database) as con:
             cur = con.cursor()
             cmd = 'CREATE TABLE IF NOT EXISTS completionFlags (genome TEXT)'
             execute_query(cur, cmd)
@@ -68,16 +69,52 @@ class FinishDb(luigi.Task):
         return [GenerateHints(x) for x in self.arg_holder]
 
     def output(self):
-        con, cur = open_database(self.cfg.database)
+        return IndexTarget(self.args.database)
+
+    def run(self):
+        cmd = ['load2sqlitedb', '--makeIdx', '--dbaccess', self.args.database]
+        runProc(cmd)
+
+
+class IndexTarget(luigi.Target):
+    def __init__(self, db):
+        self.db = db
+
+    def exists(self):
+        con, cur = open_database(self.db)
         r = []
         for idx in ['gidx', 'hidx']:
             cmd = 'PRAGMA index_info("{}")'.format(idx)
             r.append(execute_query(cur, cmd).fetchall())
         return len(r) == 2
 
-    def run(self):
-        cmd = ['load2sqlitedb', '--makeIdx', '--dbaccess', self.args.database]
-        runProc(cmd)
+
+def is_bam(path):
+    try:
+        pysam.Samfile(path)
+    except ValueError:
+        return False
+    return True
+
+
+def generate_bam_map(bam_files, genomes):
+    bam_map = {}
+    for namespace in bam_files:
+        genome = vars(namespace).keys()[0]
+        assert genome in genomes
+        bam_map[genome] = tuple([x[0] for x in vars(namespace).values()])
+        assert all([os.path.exists(x) for x in bam_map[genome]])
+    for genome, files in bam_map.iteritems():
+        t = []
+        for f in files:
+            if is_bam(f) is True:
+                t.append(f)
+            else:
+                paths = [x.rstrip() for x in open(f)]
+                assert all([os.path.exists(x) for x in paths])
+                t.extend(paths)
+        bam_map[genome] = tuple(t)
+    return frozendict(bam_map)
 
 
 def parse_args():
@@ -119,13 +156,7 @@ def parse_args():
         fasta_map[genome] = vars(namespace).values()[0]
         assert os.path.exists(fasta_map[genome])
     args.fasta_map = frozendict(fasta_map)
-    bam_map = {}
-    for namespace in args.bamFiles:
-        genome = vars(namespace).keys()[0]
-        assert genome in args.genomes
-        bam_map[genome] = tuple([x[0] for x in vars(namespace).values()])
-        assert all([os.path.exists(x) for x in bam_map[genome]])
-    args.bam_map = frozendict(bam_map)
+    args.bam_map = generate_bam_map(args.bamFiles, args.genomes)
     del args.bamFiles
     del args.genomeFastas
     ensureFileDir(args.database)
