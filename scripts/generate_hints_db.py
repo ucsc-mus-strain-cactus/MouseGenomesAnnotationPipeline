@@ -53,7 +53,7 @@ class GenerateHints(AbstractJobTreeTask):
 
     def run(self):
         self.start_jobtree(self.cfg, external_main, self.cfg.norestart)
-        with ExclusiveSqlConnection(self.database) as con:
+        with ExclusiveSqlConnection(self.cfg.database) as con:
             cur = con.cursor()
             cmd = 'CREATE TABLE IF NOT EXISTS completionFlags (genome TEXT)'
             execute_query(cur, cmd)
@@ -85,7 +85,9 @@ class IndexTarget(luigi.Target):
         r = []
         for idx in ['gidx', 'hidx']:
             cmd = 'PRAGMA index_info("{}")'.format(idx)
-            r.append(execute_query(cur, cmd).fetchall())
+            v = execute_query(cur, cmd).fetchall()
+            if len(v) > 0:
+                r.append(v)
         return len(r) == 2
 
 
