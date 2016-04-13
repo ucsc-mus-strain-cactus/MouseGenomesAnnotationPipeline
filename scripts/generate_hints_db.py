@@ -10,7 +10,7 @@ from frozendict import frozendict
 os.environ['PYTHONPATH'] = './:./submodules:./submodules/pycbio:./submodules/comparativeAnnotator'
 sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comparativeAnnotator'])
 from pycbio.sys.fileOps import ensureFileDir
-from pycbio.sys.procOps import runProc
+from pycbio.sys.procOps import runProcCode
 from jobTree.scriptTree.stack import Stack
 from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
 from comparativeAnnotator.augustus.build_hints_db import external_main
@@ -73,7 +73,9 @@ class FinishDb(luigi.Task):
 
     def run(self):
         cmd = ['load2sqlitedb', '--makeIdx', '--dbaccess', self.args.database]
-        runProc(cmd)
+        ret = runProcCode(cmd)
+        if ret != 1:  # load2sqlitedb produces a 1 when successful for some reason
+            raise RuntimeError('Error loading index. AugustusTMR will be VERY slow if this is not fixed!')
 
 
 class IndexTarget(luigi.Target):
