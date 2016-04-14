@@ -1,5 +1,5 @@
 """
-Wrapper for comparativeAnnotator's build_hints_db.py, which will do so per-genome.
+Generate a hints database file from RNAseq alignments for AugustusTMR.
 """
 import sys
 import os

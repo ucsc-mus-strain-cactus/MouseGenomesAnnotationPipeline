@@ -267,7 +267,7 @@ class TMRJobTree(HashableNamespace):
         self.augustus_bin = 'submodules/augustus/bin/augustus'
         assert os.path.exists(self.augustus_bin)
         self.padding = 20000
-        self.max_gene_size = 2000000
+        self.max_gene_size = 3000000
         self.hints_db = args.augustusHints
         self.out_gtf = cfg.augustus_gtf
         self.genome = cfg.target_genome
