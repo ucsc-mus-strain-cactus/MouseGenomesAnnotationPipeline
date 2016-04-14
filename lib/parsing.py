@@ -19,14 +19,42 @@ class HashableNamespace(argparse.Namespace):
         return reduce(xor_fn, val_iter, first) ^ hash(tuple(self.__dict__.values()))
 
 
-class NamespaceAction(argparse.Action):
+class NamespaceDictAction(argparse.Action):
     """
     http://stackoverflow.com/questions/34930630/grouping-an-unknown-number-of-arguments-with-argparse#34930706
     Asking questions on SO is a good idea!
 
+    This action runs in two modes - dict and defaultdict. In defaultdict mode, a key can be passed more than once.
+    In dict mode, the last key will be used. Overall, produces a single Namespace as the value for a argument.
+    """
+    def __init__(self, *args, **kwargs):
+        self.mode = kwargs.pop('mode', 'dict')  # Will use 'dict' as default
+        super(NamespaceDictAction, self).__init__(*args, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:
+            if self.mode == 'dict':
+                arg_vals = HashableNamespace(**dict(v.split('=') for v in values))
+            elif self.mode == 'defaultdict':
+                d = defaultdict(list)
+                for v in values:
+                    v = v.split('=')
+                    d[v[0]].append(v[1])
+                df = {x: tuple(y) for x, y in d.iteritems()}
+                arg_vals = HashableNamespace(**df)
+            else:
+                raise NotImplementedError("only dict or defaultdict")
+        except TypeError:
+            raise RuntimeError('Group {} appears to be incorrectly formatted'.format(values))
+        setattr(namespace, self.dest, arg_vals)
+
+
+class NamespaceAction(argparse.Action):
+    """
+    http://stackoverflow.com/questions/34930630/grouping-an-unknown-number-of-arguments-with-argparse#34930706
+    Asking questions on SO is a good idea!
     This modified action allows me to group together the four key-value pairs passed to --geneSets as a nested
     namespace.
-    Extended to produce a defaultdict(list) if requested, so that a key can appear more than once.
     """
     def __init__(self, *args, **kwargs):
         self.mode = kwargs.pop('mode', 'dict')  # Will use 'dict' as default
@@ -38,17 +66,7 @@ class NamespaceAction(argparse.Action):
         setattr(namespace, self.dest, current_arg_vals)
         arg_vals = getattr(namespace, self.dest)
         try:
-            if self.mode == 'dict':
-                arg_vals.append(HashableNamespace(**dict(v.split('=') for v in values)))
-            elif self.mode == 'defaultdict':
-                d = defaultdict(list)
-                for v in values:
-                    v = v.split('=')
-                    d[v[0]].append(v[1])
-                df = {x: tuple(y) for x, y in d.iteritems()}
-                arg_vals.append(HashableNamespace(**df))
-            else:
-                raise NotImplementedError("only dict or defaultdict")
+            arg_vals.append(HashableNamespace(**dict(v.split('=') for v in values)))
         except TypeError:
             raise RuntimeError('Group {} appears to be incorrectly formatted'.format(values))
 

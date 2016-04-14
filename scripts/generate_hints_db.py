@@ -12,10 +12,18 @@ sys.path.extend(['./', './submodules', './submodules/pycbio', './submodules/comp
 from pycbio.sys.fileOps import ensureFileDir
 from pycbio.sys.procOps import runProcCode
 from jobTree.scriptTree.stack import Stack
-from lib.parsing import HashableNamespace, NamespaceAction, FileArgumentParser
+from lib.parsing import HashableNamespace, NamespaceDictAction, FileArgumentParser
 from comparativeAnnotator.augustus.build_hints_db import external_main
 from pipeline.abstract_classes import AbstractJobTreeTask, RowExistsSqlTarget
 from pycbio.sys.sqliteOps import ExclusiveSqlConnection, execute_query, open_database
+
+
+class HintsNamespace(HashableNamespace):
+    """
+    Add a repr to prevent spamming the luigi logfile
+    """
+    def __repr__(self):
+        return 'BuildHints-{}'.format(self.genome)
 
 
 class BuildHints(luigi.WrapperTask):
@@ -25,7 +33,7 @@ class BuildHints(luigi.WrapperTask):
     params = luigi.Parameter()
 
     def create_args(self, genome):
-        args = HashableNamespace()
+        args = HintsNamespace()
         args.__dict__.update(vars(self.params.jobTreeOptions))
         args.genome = genome
         args.jobTree = os.path.join(self.params.workDir, 'jobTrees', 'hintsDb', genome)
@@ -47,6 +55,9 @@ class BuildHints(luigi.WrapperTask):
 
 
 class GenerateHints(AbstractJobTreeTask):
+    """
+    Main entry to hints generating script. Calls out to build_hints_db in comparativeAnnotator.
+    """
     def output(self):
         row_query = 'SELECT genome FROM completionFlags WHERE genome = "{}"'.format(self.cfg.genome)
         return RowExistsSqlTarget(self.cfg.database, 'completionFlags', row_query)
@@ -62,6 +73,9 @@ class GenerateHints(AbstractJobTreeTask):
 
 
 class FinishDb(luigi.Task):
+    """
+    Construct indices, finishing the database. Indices are required for performance.
+    """
     args = luigi.Parameter()
     arg_holder = luigi.Parameter()
 
@@ -75,10 +89,13 @@ class FinishDb(luigi.Task):
         cmd = ['load2sqlitedb', '--makeIdx', '--dbaccess', self.args.database]
         ret = runProcCode(cmd)
         if ret != 1:  # load2sqlitedb produces a 1 when successful for some reason
-            raise RuntimeError('Error loading index. AugustusTMR will be VERY slow if this is not fixed!')
+            raise RuntimeError('Error generating index. AugustusTMR will be VERY slow if this is not fixed!')
 
 
 class IndexTarget(luigi.Target):
+    """
+    luigi target that determines if the indices have been built on a hints database.
+    """
     def __init__(self, db):
         self.db = db
 
@@ -94,6 +111,9 @@ class IndexTarget(luigi.Target):
 
 
 def is_bam(path):
+    """
+    Is this file a bamfile?
+    """
     try:
         pysam.Samfile(path)
     except ValueError:
@@ -102,15 +122,14 @@ def is_bam(path):
 
 
 def generate_bam_map(bam_files, genomes):
+    """
+    Munges input to validate files, expanding fofns to all paths contained.
+    """
     bam_map = {}
-    for namespace in bam_files:
-        genome = vars(namespace).keys()[0]
+    for genome, file_list in vars(bam_files).iteritems():
         assert genome in genomes
-        bam_map[genome] = tuple([x[0] for x in vars(namespace).values()])
-        assert all([os.path.exists(x) for x in bam_map[genome]])
-    for genome, files in bam_map.iteritems():
         t = []
-        for f in files:
+        for f in file_list:
             if is_bam(f) is True:
                 t.append(f)
             else:
@@ -126,10 +145,10 @@ def parse_args():
     Build argparse object, parse arguments. See the parsing library for a lot of the features used here.
     """
     parser = FileArgumentParser(description=__doc__)
-    parser.add_argument('--bamFiles', action=NamespaceAction, nargs='+', mode='defaultdict', required=True,
+    parser.add_argument('--bamFiles', action=NamespaceDictAction, nargs='+', mode='defaultdict', required=True,
                         metavar='KEY=VALUE',
                         help='for each key:value pair, give a genome and a bamfile or a bam fofn.')
-    parser.add_argument('--genomeFastas', action=NamespaceAction, nargs='+', mode='dict',
+    parser.add_argument('--genomeFastas', action=NamespaceDictAction, nargs='+', mode='dict',
                         required=True, metavar='KEY=VALUE',
                         help='for each key:value pair, give a genome and a fasta.')
     parser.add_argument("--database", required=True, metavar='FILE', help='path to write database to.')
@@ -153,16 +172,10 @@ def parse_args():
     args.jobTreeOptions.jobTree = None
     args.jobTreeOptions.__dict__.update({x: y for x, y in vars(args).iteritems() if x in args.jobTreeOptions})
     # munge parsed args, verify, make hashable
-    args.genomes = frozenset([vars(namespace).keys()[0] for namespace in args.genomeFastas])
-    fasta_map = {}
-    for namespace in args.genomeFastas:
-        genome = vars(namespace).keys()[0]
-        fasta_map[genome] = vars(namespace).values()[0]
-        assert os.path.exists(fasta_map[genome])
-    args.fasta_map = frozendict(fasta_map)
+    args.genomes = frozenset(vars(args.genomeFastas).keys())
+    args.fasta_map = frozendict(vars(args.genomeFastas))
+    assert all([os.path.exists(p) for p in args.fasta_map.itervalues()])
     args.bam_map = generate_bam_map(args.bamFiles, args.genomes)
-    del args.bamFiles
-    del args.genomeFastas
     ensureFileDir(args.database)
     return args
 
