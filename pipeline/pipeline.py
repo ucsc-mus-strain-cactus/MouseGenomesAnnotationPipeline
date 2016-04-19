@@ -302,18 +302,19 @@ class GeneSet(luigi.Task):
         r.append(luigi.LocalTarget(self.cfg.pickled_metrics))
         return r
 
-    def convert_gp_to_gtf(self, gps, gtfs):
-        for gp, gtf in zip(*[gps.itervalues(), gtfs.itervalues()]):
-            s = self.cfg.gene_set_name
-            cmd = [['bin/fixGenePredScore', gp],
-                   ['genePredToGtf', '-source={}'.format(s), '-honorCdsStat', '-utr', 'file', '/dev/stdin', gtf]]
-            runProc(cmd)
+    def convert_gp_to_gtf(self, gp, gtf):
+        s = self.cfg.gene_set_name
+        cmd = [['bin/fixGenePredScore', gp],
+               ['genePredToGtf', '-source={}'.format(s), '-honorCdsStat', '-utr', 'file', '/dev/stdin', gtf]]
+        runProc(cmd)
 
     def run(self):
         ensureDir(self.cfg.gene_set_dir)
         ensureDir(self.cfg.metrics_dir)
         generate_gene_set_wrapper(self.cfg)
-        self.convert_gp_to_gtf(self.cfg.geneset_gps, self.cfg.geneset_gtfs)
+        for gp, gtf in zip(*[self.cfg.geneset_gps.itervalues(), self.cfg.geneset_gtfs.itervalues()]):
+            self.convert_gp_to_gtf(gp, gtf)
+        self.convert_gp_to_gtf(self.cfg.combined_gp, self.cfg.combined_gtf)
 
 
 ########################################################################################################################

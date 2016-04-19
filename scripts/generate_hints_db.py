@@ -173,6 +173,7 @@ def parse_args():
     args.jobTreeOptions.__dict__.update({x: y for x, y in vars(args).iteritems() if x in args.jobTreeOptions})
     # munge parsed args, verify, make hashable
     args.genomes = frozenset(vars(args.genomeFastas).keys())
+    assert len(args.genomes) > 0
     args.fasta_map = frozendict(vars(args.genomeFastas))
     assert all([os.path.exists(p) for p in args.fasta_map.itervalues()])
     args.bam_map = generate_bam_map(args.bamFiles, args.genomes)
