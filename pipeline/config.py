@@ -61,7 +61,6 @@ class QueryCfg(HashableNamespace):
         self.transcript_fasta = os.path.join(self.work_dir, '{}.fa'.format(self.gene_set_name))
         self.flat_transcript_fasta = self.transcript_fasta + '.flat'
         self.psl = os.path.join(self.work_dir, '{}.psl'.format(self.gene_set_name))
-        self.cds = os.path.join(self.work_dir, '{}.cds'.format(self.gene_set_name))
         # genome files
         self.genome_work_dir = os.path.join(cfg.work_dir, 'genome_files')
         self.ref_fasta = os.path.join(self.genome_work_dir, self.query_genome + '.fa')
@@ -96,7 +95,6 @@ class QueryTargetCfg(HashableNamespace):
         self.ref_two_bit = cfg.query_cfg.ref_two_bit
         self.ref_sizes = cfg.query_cfg.ref_sizes
         self.ref_psl = cfg.query_cfg.psl
-        self.ref_cds = cfg.query_cfg.cds
         self.annotation_gp = cfg.gene_set.genePred
         self.transcript_fasta = cfg.query_cfg.transcript_fasta
         self.flat_transcript_fasta = self.transcript_fasta + '.flat'

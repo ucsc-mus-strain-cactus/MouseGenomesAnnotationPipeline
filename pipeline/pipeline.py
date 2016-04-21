@@ -6,7 +6,7 @@ import itertools
 from pycbio.sys.procOps import runProc
 from pycbio.sys.fileOps import ensureDir
 from lib.ucsc_chain_net import chainNetStartup
-from abstract_classes import AbstractAtomicFileTask, AbstractAtomicManyFileTask, AbstractJobTreeTask
+from abstract_classes import AbstractAtomicFileTask, AbstractJobTreeTask
 from abstract_classes import RowsSqlTarget
 from comparativeAnnotator.annotation_pipeline import main as comp_ann_main
 from comparativeAnnotator.plotting.transmap_analysis import paralogy_plot, cov_plot, ident_plot, num_pass_excel,\
@@ -35,7 +35,7 @@ class AnnotationFiles(luigi.WrapperTask):
         yield TranscriptFasta(cfg=self.cfg, target_file=self.cfg.transcript_fasta)
         yield FlatTranscriptFasta(cfg=self.cfg, target_file=self.cfg.flat_transcript_fasta)
         yield TranscriptBed(cfg=self.cfg, target_file=self.cfg.bed)
-        yield FakePsl(cfg=self.cfg, target_files=(self.cfg.psl, self.cfg.cds))
+        yield FakePsl(cfg=self.cfg, target_file=self.cfg.psl)
         yield GenomeFiles(cfg=self.cfg)
 
 
@@ -74,7 +74,7 @@ class FlatTranscriptFasta(AbstractAtomicFileTask):
         runProc(cmd)
 
 
-class FakePsl(AbstractAtomicManyFileTask):
+class FakePsl(AbstractAtomicFileTask):
     """
     Produces a fake PSL mapping transcripts to the genome, using the Kent tool genePredToFakePsl
     """
@@ -82,11 +82,9 @@ class FakePsl(AbstractAtomicManyFileTask):
         return GenomeSizes(cfg=self.cfg, target_file=self.cfg.ref_sizes)
 
     def run(self):
-        tmp_psl = luigi.LocalTarget(is_tmp=True)
-        tmp_cds = luigi.LocalTarget(is_tmp=True)
         cmd = ['genePredToFakePsl', '-chromSize={}'.format(self.cfg.ref_sizes), 'noDB',
-               self.cfg.annotation_gp, tmp_psl.path, tmp_cds.path]
-        self.run_cmd(cmd, (tmp_psl, tmp_cds))
+               self.cfg.annotation_gp, '/dev/stdout', '/dev/null']
+        self.run_cmd(cmd)
 
 
 ########################################################################################################################
@@ -127,7 +125,6 @@ class GenomeTwoBit(AbstractAtomicFileTask):
         return GenomeFasta(cfg=self.cfg, target_file=self.cfg.genome_fasta)
 
     def run(self):
-        import os
         cmd = ['faToTwoBit', self.cfg.genome_fasta, '/dev/stdout']
         self.run_cmd(cmd)
 
@@ -225,8 +222,7 @@ class TransMapGp(AbstractAtomicFileTask):
         return TransMapPsl(cfg=self.cfg, target_file=self.cfg.psl)
 
     def run(self):
-        cmd = ['mrnaToGene', '-keepInvalid', '-quiet', '-genePredExt', '-ignoreUniqSuffix', '-insertMergeSize=0',
-               '-cdsFile={}'.format(self.cfg.ref_cds), self.cfg.psl, '/dev/stdout']
+        cmd = ['transMapPslToGenePred', self.cfg.annotation_gp, self.cfg.psl, '/dev/stdout']
         self.run_cmd(cmd)
 
 
