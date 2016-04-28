@@ -222,7 +222,8 @@ class TransMapGp(AbstractAtomicFileTask):
         return TransMapPsl(cfg=self.cfg, target_file=self.cfg.psl)
 
     def run(self):
-        cmd = ['transMapPslToGenePred', self.cfg.annotation_gp, self.cfg.psl, '/dev/stdout']
+        cmd = ['transMapPslToGenePred', '-nonCodingGapFillMax=30', '-codingGapFillMax=30',
+               self.cfg.annotation_gp, self.cfg.psl, '/dev/stdout']
         self.run_cmd(cmd)
 
 
